@@ -1,0 +1,575 @@
+<!--
+@author: Google
+@license: Apache2
+-->
+@if (presentation(); as pres) {
+  @if (!isPresenting()) {
+    <div class="h-screen w-screen bg-gray-800 flex flex-col">
+      <!-- Top Bar -->
+      <header class="bg-gray-900 shadow-md p-2 flex justify-between items-center z-30 flex-shrink-0">
+        <div class="flex items-center gap-4">
+          <h1 class="text-xl font-bold text-white">{{ pres.title }}</h1>
+          <div [class.text-green-400]="autosaveStatus() === 'saved'" [class.text-yellow-400]="autosaveStatus() === 'saving'" class="text-sm transition-colors">
+            @switch(autosaveStatus()) {
+              @case('saving') { <span>Saving...</span> }
+              @case('saved') { <span>Saved</span> }
+            }
+          </div>
+        </div>
+        <!-- Undo/Redo Controls -->
+        <div class="flex items-center gap-2">
+          <button title="Evolve AI Core Instructions" (click)="openAiEvolutionModal()" class="px-3 py-2 text-sm font-medium text-white bg-gray-700 hover:bg-gray-600 rounded-md disabled:opacity-50 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-1.007 1.11-1.226M10.343 3.94a2.25 2.25 0 0 1 3.314 0c.55.219 1.02.684 1.11 1.226m-4.424 0c-.09.542-.56 1.007-1.11 1.226a2.25 2.25 0 0 0-3.314 0c-.55-.219-1.02-.684-1.11-1.226m11.118 0A2.25 2.25 0 0 0 15.657 2.25c-.55.219-1.02.684-1.11 1.226m5.556 0c.09-.542.56-1.007 1.11-1.226a2.25 2.25 0 0 1 3.314 0c.55.219 1.02.684 1.11 1.226M13.657 21.75a2.25 2.25 0 0 1-3.314 0c-.55-.219-1.02-.684-1.11-1.226m4.424 0c.09.542.56 1.007 1.11 1.226a2.25 2.25 0 0 0 3.314 0c.55-.219 1.02-.684 1.11-1.226M6.343 21.75a2.25 2.25 0 0 0-3.314 0c-.55-.219-1.02-.684-1.11-1.226m11.118 0a2.25 2.25 0 0 1-3.314 0c-.55-.219-1.02-.684-1.11-1.226M12 9a.75.75 0 0 1 .75.75v3.52l2.395 1.382a.75.75 0 0 1-.75 1.298L11.25 14.53V9.75A.75.75 0 0 1 12 9Z" /></svg>
+            <span>Evolve AI</span>
+          </button>
+          <button title="Undo (Ctrl+Z)" (click)="handleUndo()" [disabled]="!undoRedoService.canUndo()" class="px-3 py-2 text-sm font-medium text-white bg-gray-700 hover:bg-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 15l-3-3m0 0l3-3m-3 3h8a5 5 0 015 5v1" /></svg>
+            <span>Undo</span>
+          </button>
+          <button title="Redo (Ctrl+Y)" (click)="handleRedo()" [disabled]="!undoRedoService.canRedo()" class="px-3 py-2 text-sm font-medium text-white bg-gray-700 hover:bg-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 15l3-3m0 0l-3-3m3 3H8a5 5 0 00-5 5v1" /></svg>
+            <span>Redo</span>
+          </button>
+        </div>
+        <div class="flex items-center gap-2 md:gap-4">
+          <button title="Edit presentation theme" (click)="isThemeEditorOpen.set(true)" class="px-3 py-2 text-sm font-medium text-white bg-gray-700 hover:bg-gray-600 rounded-md flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586zM12 6a2 2 0 100-4 2 2 0 000 4zM10 18a2 2 0 100-4 2 2 0 000 4zM4 10a2 2 0 100-4 2 2 0 000 4z" /></svg>
+            <span>Theme</span>
+          </button>
+          <button title="Enter presentation mode" (click)="startPresentation()" class="px-3 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>
+            <span>Present</span>
+          </button>
+          <!-- Download Button -->
+          <div class="relative">
+            <button (click)="toggleDownloadMenu()"
+                    [disabled]="downloadState() !== 'idle'"
+                    title="Download or Export"
+                    class="px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md flex items-center gap-2 disabled:bg-gray-500 disabled:cursor-wait">
+              @if (downloadState() === 'idle') {
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                <span>Download</span>
+              } @else {
+                <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                <span>Generating...</span>
+              }
+            </button>
+            @if (isDownloadMenuOpen()) {
+              <div class="absolute right-0 mt-2 w-56 bg-gray-700 rounded-md shadow-lg py-1 z-20 border border-gray-600">
+                <a (click)="downloadAsPptx()" class="block px-4 py-2 text-sm text-gray-200 hover:bg-purple-600 cursor-pointer">Download as PPTX</a>
+                <a (click)="downloadAsPdf()" class="block px-4 py-2 text-sm text-gray-200 hover:bg-purple-600 cursor-pointer">Download as PDF</a>
+                <a (click)="downloadAsPngZip()" class="block px-4 py-2 text-sm text-gray-200 hover:bg-purple-600 cursor-pointer">Export as PNG (.zip)</a>
+                <div class="border-t border-gray-600 my-1"></div>
+                <a (click)="downloadAsTxt()" class="block px-4 py-2 text-sm text-gray-200 hover:bg-purple-600 cursor-pointer">Export Notes as .txt</a>
+              </div>
+            }
+          </div>
+          <button (click)="exitEditor.emit()" title="Return to landing page" class="px-3 py-2 text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 rounded-md">Exit</button>
+        </div>
+      </header>
+  
+      <!-- Main Content -->
+      <main class="flex-grow flex overflow-hidden relative">
+        <!-- Slide Sidebar -->
+        <aside class="w-64 bg-gray-900/50 p-4 overflow-y-auto flex-shrink-0 flex flex-col">
+          <div class="flex items-center border-b border-gray-700 mb-4 rounded-md overflow-hidden">
+            <button (click)="sidebarView.set('thumbnails')" 
+                    class="flex-1 py-2 text-sm font-medium transition-colors"
+                    [class]="sidebarView() === 'thumbnails' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:bg-gray-800'">
+              Thumbnails
+            </button>
+            <button (click)="sidebarView.set('outline')"
+                    class="flex-1 py-2 text-sm font-medium transition-colors"
+                    [class]="sidebarView() === 'outline' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:bg-gray-800'">
+              Outline
+            </button>
+          </div>
+
+          @switch (sidebarView()) {
+            @case ('thumbnails') {
+              <div class="space-y-3">
+                @for (slide of pres.slides; track i; let i = $index) {
+                  <div (click)="selectSlide(i)"
+                       class="aspect-[16/9] w-full rounded-md cursor-pointer relative group border-2 transition-colors"
+                       [class.border-purple-500]="i === currentSlideIndex()"
+                       [class.border-gray-700]="i !== currentSlideIndex()"
+                       [class.hover:border-purple-600/70]="i !== currentSlideIndex()">
+                    <div class="w-full h-full bg-cover bg-center rounded-sm transition-all" 
+                         [class.brightness-105]="i === currentSlideIndex()"
+                         [class.group-hover:brightness-110]="i !== currentSlideIndex()"
+                         [style.background-image]="slide.imageUrl ? 'url(' + slide.imageUrl + ')' : ''"
+                         [style.background-color]="pres.theme.backgroundColor">
+                        @if (!slide.imageUrl) {
+                            <div class="flex items-center justify-center h-full">
+                                <span class="text-xs px-2 text-center" [style.color]="pres.theme.textColor">{{ slide.title }}</span>
+                            </div>
+                        }
+                    </div>
+                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span class="text-white font-bold text-lg">{{ i + 1 }}</span>
+                    </div>
+
+                    <!-- Rating controls -->
+                    <div class="absolute -bottom-2 -right-2 flex gap-1 z-10">
+                      <button (click)="rateSlide(i, 'good'); $event.stopPropagation()"
+                              title="This slide is good"
+                              class="w-6 h-6 rounded-full flex items-center justify-center transition-transform hover:scale-110"
+                              [class.bg-green-500]="slide.rating?.type === 'good'"
+                              [class.bg-gray-600]="slide.rating?.type !== 'good'">
+                        👍
+                      </button>
+                      <div class="relative">
+                        <button (click)="openBadRatingPopover(i); $event.stopPropagation()"
+                                title="This slide is bad"
+                                class="w-6 h-6 rounded-full flex items-center justify-center transition-transform hover:scale-110"
+                                [class.bg-red-500]="slide.rating?.type === 'bad'"
+                                [class.bg-gray-600]="slide.rating?.type !== 'bad'">
+                          👎
+                        </button>
+                         @if(badRatingInfo()?.slideIndex === i) {
+                          <div class="absolute bottom-full right-0 mb-2 w-48 bg-gray-700 rounded-lg p-3 shadow-lg border border-gray-600 z-10 animate-pop-in">
+                              <h4 class="text-sm font-bold text-white mb-2">What's wrong?</h4>
+                              <div class="space-y-2">
+                                @for(reason of ratingReasons; track reason) {
+                                  <label class="flex items-center text-xs text-gray-200 cursor-pointer">
+                                    <input type="checkbox" [(ngModel)]="badRatingInfo()!.reasons[reason]" class="w-4 h-4 rounded bg-gray-800 border-gray-500 text-purple-500 focus:ring-purple-600 cursor-pointer">
+                                    <span class="ml-2">{{ reason }}</span>
+                                  </label>
+                                }
+                              </div>
+                              <button (click)="handleBadRatingSubmit(); $event.stopPropagation()" class="mt-3 w-full bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold py-1 rounded">Submit</button>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+            @case ('outline') {
+              <div class="space-y-2">
+                @for (slide of pres.slides; track i; let i = $index) {
+                  <div (click)="selectSlide(i)"
+                       draggable="true"
+                       (dragstart)="handleDragStart(i)"
+                       (dragover)="handleDragOver($event, i)"
+                       (dragleave)="handleDragLeave()"
+                       (drop)="handleDrop(i)"
+                       (dragend)="handleDragEnd()"
+                       class="p-2 rounded-md cursor-pointer transition-all duration-150"
+                       [class.bg-purple-800/50]="i === currentSlideIndex()"
+                       [class.bg-gray-700/50]="i !== currentSlideIndex() && dropTargetIndex() !== i"
+                       [class.hover:bg-gray-700]="i !== currentSlideIndex()"
+                       [class.border-2]="dropTargetIndex() === i"
+                       [class.border-blue-500]="dropTargetIndex() === i">
+                    <span class="font-bold text-sm">{{ i + 1 }}.</span>
+                    <span class="text-sm ml-2">{{ slide.title }}</span>
+                  </div>
+                }
+              </div>
+            }
+          }
+          <div class="flex-grow"></div>
+          <div class="mt-4 flex flex-col gap-2">
+            <button title="Generate a new slide on a specific topic" (click)="isAddSlideAiOpen.set(true)" class="w-full px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md flex items-center justify-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" /></svg>
+              <span>Add Slide with AI</span>
+            </button>
+            <button title="Add a blank slide to the end" (click)="addSlide()" class="w-full px-4 py-2 text-sm font-medium text-white bg-gray-700 hover:bg-gray-600 rounded-md flex items-center justify-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2-2H5a2 2 0 01-2-2V5zm2 1h10v8H5V6z" clip-rule="evenodd" /></svg>
+              <span>Add Blank Slide</span>
+            </button>
+          </div>
+        </aside>
+  
+        <!-- Main Slide Viewer -->
+        <div class="flex-grow flex flex-col items-center justify-center p-4 relative overflow-hidden">
+            @if(currentSlide(); as slide) {
+              <div class="w-full max-w-7xl aspect-[16/9] shadow-2xl bg-gray-900 rounded-lg relative overflow-hidden">
+                @if (transitioningSlide(); as ts) {
+                  <div class="w-full h-full absolute inset-0" [class]="ts.animation">
+                    <app-slide [slide]="ts.slide" [theme]="pres.theme" />
+                  </div>
+                }
+                <div class="w-full h-full absolute inset-0" [class]="animationClass()">
+                   <app-slide 
+                    [slide]="slide" 
+                    [theme]="pres.theme"
+                    (slideChange)="handleSlideChange($event)"
+                    (generateImage)="generateImageForCurrentSlide($event)"
+                    (editImage)="openImageEditModal()"
+                    (removeImage)="handleRemoveImage()"
+                    (generateContentFromImage)="handleGenerateContentFromImage()"
+                    (improveImagePrompt)="handleImproveImagePrompt()"
+                    (improveContent)="openContentImprover($event)"
+                    />
+                </div>
+              </div>
+            }
+
+            <!-- Navigation Controls -->
+            <div class="mt-4 flex items-center gap-4">
+              <button (click)="previousSlide()" [disabled]="currentSlideIndex() === 0" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed">
+                &larr; Previous
+              </button>
+              <span class="text-lg font-semibold">{{ currentSlideIndex() + 1 }} / {{ pres.slides.length }}</span>
+              <button (click)="nextSlide()" [disabled]="currentSlideIndex() === pres.slides.length - 1" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed">
+                Next &rarr;
+              </button>
+            </div>
+        </div>
+  
+        <!-- Right Sidebar -->
+        <aside class="transition-all duration-300 ease-in-out bg-gray-900/50 flex flex-col" [class.w-96]="isRightSidebarOpen()" [class.w-0]="!isRightSidebarOpen()">
+          <div class="p-4 overflow-y-auto flex-grow flex flex-col" [class.opacity-100]="isRightSidebarOpen()" [class.opacity-0]="!isRightSidebarOpen()" [class.delay-150]="isRightSidebarOpen()">
+              <h3 class="text-xl font-bold mb-4">Speaker Notes</h3>
+              <div class="flex-grow bg-gray-800/50 rounded-lg p-3 space-y-2">
+                @for(note of normalizedSpeakerNotes(); track i; let i = $index) {
+                  <div class="relative group">
+                    <p contenteditable="true" (blur)="updateSpeakerNote($event, i)" class="w-full p-1 rounded hover:bg-gray-700 focus:bg-gray-700 outline-none">{{ note }}</p>
+                    <button (click)="openContentImprover({ field: 'speakerNotes', index: i })" title="Improve with AI" class="absolute right-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-purple-400 hover:text-purple-300 p-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z" /></svg>
+                    </button>
+                  </div>
+                }
+              </div>
+              <div class="mt-4 flex flex-col gap-2">
+                <button title="Generate speaker notes for this slide" (click)="generateNotesForCurrentSlide()" class="w-full text-sm p-2 bg-purple-600 hover:bg-purple-700 rounded">Generate Notes</button>
+                <button title="Improve all notes on this slide" (click)="improveAllSpeakerNotes()" class="w-full text-sm p-2 bg-gray-700 hover:bg-gray-600 rounded">Improve All Notes</button>
+              </div>
+
+              <div class="border-t border-gray-700 my-6"></div>
+
+              <h3 class="text-xl font-bold mb-4">AI Actions</h3>
+              <div class="grid grid-cols-2 gap-2">
+                  <button title="Improve slide title" (click)="improveTitle()" class="text-sm p-2 bg-gray-700 hover:bg-gray-600 rounded">Improve Title</button>
+                  <button title="Improve all bullet points" (click)="improveAllBulletPoints()" class="text-sm p-2 bg-gray-700 hover:bg-gray-600 rounded">Improve Bullets</button>
+                  <button title="Let AI suggest a better slide order" (click)="smartReorder()" class="text-sm p-2 bg-gray-700 hover:bg-gray-600 rounded col-span-2">Smart Reorder Slides</button>
+              </div>
+          </div>
+        </aside>
+        <button (click)="isRightSidebarOpen.set(!isRightSidebarOpen())"
+                class="absolute top-1/2 -translate-y-1/2 bg-gray-900/80 p-1 rounded-l-md transition-all duration-300 ease-in-out z-20"
+                [class.right-96]="isRightSidebarOpen()"
+                [class.right-0]="!isRightSidebarOpen()"
+                title="Toggle Sidebar">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform duration-300 ease-in-out" [class.rotate-180]="isRightSidebarOpen()" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+      </main>
+    </div>
+  } @else {
+    <app-presentation-view 
+      [presentation]="pres" 
+      [initialSlideIndex]="currentSlideIndex()" 
+      (exit)="stopPresentation()"></app-presentation-view>
+  }
+}
+
+<!-- Modals & Floating Components -->
+
+<!-- Theme Editor Modal -->
+@if (isThemeEditorOpen() && presentation(); as pres) {
+  <div class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg border border-gray-700 animate-pop-in">
+      <div class="p-4 flex justify-between items-center border-b border-gray-700">
+        <h2 class="text-xl font-bold text-white">Theme Editor</h2>
+        <button (click)="isThemeEditorOpen.set(false)" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+      </div>
+      <div class="p-6 space-y-6">
+        <!-- AI Theme Generator -->
+        <div>
+          <label for="ai-theme" class="block text-sm font-medium text-gray-300">Generate Theme with AI</label>
+          <div class="mt-1 flex gap-2">
+            <input type="text" id="ai-theme" [ngModel]="aiThemePrompt()" (ngModelChange)="aiThemePrompt.set($event)"
+                   class="flex-grow bg-gray-700 border-gray-600 rounded-md shadow-sm p-2 text-white focus:ring-purple-500 focus:border-purple-500"
+                   placeholder="e.g., a dark theme for a sci-fi presentation">
+            <button (click)="generateThemeWithAi()" [disabled]="!aiThemePrompt()"
+                    class="px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md disabled:bg-gray-500 disabled:cursor-not-allowed">
+              Generate
+            </button>
+          </div>
+        </div>
+        
+        <div class="border-t border-gray-700"></div>
+
+        <!-- Manual Theme Editor -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Primary Color</label>
+            <div class="flex items-center gap-1 bg-gray-700 p-1 rounded-md">
+              @for(color of colorSwatches.primaryColor; track color) {
+                <button (click)="updateTheme('primaryColor', color)" class="w-6 h-6 rounded" [style.background-color]="color"></button>
+              }
+              <input type="color" [ngModel]="pres.theme.primaryColor" (ngModelChange)="updateTheme('primaryColor', $event)" class="w-8 h-8 rounded border-none bg-transparent cursor-pointer">
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Background Color</label>
+            <div class="flex items-center gap-1 bg-gray-700 p-1 rounded-md">
+               @for(color of colorSwatches.backgroundColor; track color) {
+                <button (click)="updateTheme('backgroundColor', color)" class="w-6 h-6 rounded" [style.background-color]="color"></button>
+              }
+              <input type="color" [ngModel]="pres.theme.backgroundColor" (ngModelChange)="updateTheme('backgroundColor', $event)" class="w-8 h-8 rounded border-none bg-transparent cursor-pointer">
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Text Color</label>
+            <div class="flex items-center gap-1 bg-gray-700 p-1 rounded-md">
+               @for(color of colorSwatches.textColor; track color) {
+                <button (click)="updateTheme('textColor', color)" class="w-6 h-6 rounded" [style.background-color]="color"></button>
+              }
+              <input type="color" [ngModel]="pres.theme.textColor" (ngModelChange)="updateTheme('textColor', $event)" class="w-8 h-8 rounded border-none bg-transparent cursor-pointer">
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="title-font" class="block text-sm font-medium text-gray-300">Title Font</label>
+            <select id="title-font" [ngModel]="pres.theme.titleFont" (ngModelChange)="updateTheme('titleFont', $event)" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm p-2 text-white focus:ring-purple-500 focus:border-purple-500">
+              @for(font of availableFonts; track font) { <option [value]="font">{{ font }}</option> }
+            </select>
+          </div>
+          <div>
+            <label for="body-font" class="block text-sm font-medium text-gray-300">Body Font</label>
+            <select id="body-font" [ngModel]="pres.theme.bodyFont" (ngModelChange)="updateTheme('bodyFont', $event)" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm p-2 text-white focus:ring-purple-500 focus:border-purple-500">
+              @for(font of availableFonts; track font) { <option [value]="font">{{ font }}</option> }
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Add Slide with AI Modal -->
+@if (isAddSlideAiOpen()) {
+  <div class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg border border-gray-700 animate-pop-in">
+      <div class="p-4 flex justify-between items-center border-b border-gray-700">
+        <h2 class="text-xl font-bold text-white">Add New Slide with AI</h2>
+        <button (click)="isAddSlideAiOpen.set(false)" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div>
+          <label for="new-slide-topic" class="block text-sm font-medium text-gray-300">Topic for the new slide</label>
+          <input type="text" id="new-slide-topic" [ngModel]="newSlideTopic()" (ngModelChange)="newSlideTopic.set($event)"
+                 class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm p-2 text-white focus:ring-purple-500 focus:border-purple-500"
+                 placeholder="e.g., Our Q3 financial results">
+        </div>
+        <div class="flex justify-end gap-2">
+          <button (click)="isAddSlideAiOpen.set(false)" class="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-600 hover:bg-gray-500 rounded-md">Cancel</button>
+          <button (click)="runAddSlideAi()" [disabled]="!newSlideTopic()"
+                  class="px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md disabled:bg-gray-500">
+            Generate Slide
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Content Improver Modal -->
+@if (isContentImproverOpen() && contentToImproveInfo(); as info) {
+  <div class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-xl border border-gray-700 animate-pop-in">
+      <div class="p-4 flex justify-between items-center border-b border-gray-700">
+        <h2 class="text-xl font-bold text-white">Improve Content</h2>
+        <button (click)="isContentImproverOpen.set(false)" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <p class="text-gray-400">Original text:</p>
+        <div class="bg-gray-900/50 p-3 rounded-md border border-gray-600">
+          <p class="text-gray-200 italic">"{{ info.text }}"</p>
+        </div>
+        <p class="text-gray-400">Choose an action:</p>
+        <div class="flex justify-end gap-2">
+          <button (click)="runImproveContent('improve')" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md">Improve</button>
+          <button (click)="runImproveContent('shorten')" class="px-4 py-2 text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 rounded-md">Shorten</button>
+          <button (click)="runImproveContent('lengthen')" class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md">Lengthen</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Bulk Content Improver Modal -->
+@if (isBulkImproverOpen()) {
+  <div class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-xl border border-gray-700 animate-pop-in">
+      <div class="p-4 flex justify-between items-center border-b border-gray-700">
+        <h2 class="text-xl font-bold text-white">Improve All {{ bulkImprovementTarget() === 'bulletPoints' ? 'Bullet Points' : 'Speaker Notes' }}</h2>
+        <button (click)="isBulkImproverOpen.set(false)" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <p class="text-gray-400">This will rewrite all {{ bulkImprovementTarget() === 'bulletPoints' ? 'bullet points' : 'speaker notes' }} on this slide. Choose an action:</p>
+        <div class="flex justify-end gap-2">
+          <button (click)="runBulkImprovement('improve')" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md">Improve</button>
+          <button (click)="runBulkImprovement('shorten')" class="px-4 py-2 text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 rounded-md">Shorten</button>
+          <button (click)="runBulkImprovement('lengthen')" class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md">Lengthen</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Image Edit Modal -->
+@if (isImageEditModalOpen() && imageToEditInfo(); as info) {
+  <div class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl border border-gray-700 animate-pop-in">
+      <div class="p-4 flex justify-between items-center border-b border-gray-700">
+        <h2 class="text-xl font-bold text-white">Edit Image with AI</h2>
+        <button (click)="isImageEditModalOpen.set(false)" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-400">Current Image Prompt</label>
+          <p class="text-xs text-gray-300 bg-gray-900/50 p-2 mt-1 rounded-md border border-gray-600">{{ info.currentPrompt }}</p>
+        </div>
+        <div>
+          <label for="edit-instruction" class="block text-sm font-medium text-gray-300">What would you like to change?</label>
+          <input type="text" id="edit-instruction" [ngModel]="imageEditInstruction()" (ngModelChange)="imageEditInstruction.set($event)"
+                 class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm p-2 text-white focus:ring-purple-500 focus:border-purple-500"
+                 placeholder="e.g., make it night time, change the style to vintage photo">
+        </div>
+        <div class="flex justify-end gap-2">
+          <button (click)="isImageEditModalOpen.set(false)" class="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-600 hover:bg-gray-500 rounded-md">Cancel</button>
+          <button (click)="handleImageEdit()" [disabled]="!imageEditInstruction()"
+                  class="px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md disabled:bg-gray-500">
+            Generate New Image
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- AI Evolution Modal -->
+@if (isAiEvolutionModalOpen()) {
+  <div class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+    <div class="bg-gray-800 rounded-lg shadow-2xl w-full max-w-4xl h-[90vh] border border-gray-700 flex flex-col animate-pop-in">
+      <header class="p-4 flex justify-between items-center border-b border-gray-700 flex-shrink-0">
+        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-1.007 1.11-1.226M10.343 3.94a2.25 2.25 0 0 1 3.314 0c.55.219 1.02.684 1.11 1.226m-4.424 0c-.09.542-.56 1.007-1.11 1.226a2.25 2.25 0 0 0-3.314 0c-.55-.219-1.02-.684-1.11-1.226m11.118 0A2.25 2.25 0 0 0 15.657 2.25c-.55.219-1.02.684-1.11 1.226m5.556 0c.09-.542.56-1.007 1.11-1.226a2.25 2.25 0 0 1 3.314 0c.55.219 1.02.684 1.11 1.226M13.657 21.75a2.25 2.25 0 0 1-3.314 0c-.55-.219-1.02-.684-1.11-1.226m4.424 0c.09.542.56 1.007 1.11 1.226a2.25 2.25 0 0 0 3.314 0c.55-.219 1.02-.684 1.11-1.226M6.343 21.75a2.25 2.25 0 0 0-3.314 0c-.55-.219-1.02-.684-1.11-1.226m11.118 0a2.25 2.25 0 0 1-3.314 0c-.55-.219-1.02-.684-1.11-1.226M12 9a.75.75 0 0 1 .75.75v3.52l2.395 1.382a.75.75 0 0 1-.75 1.298L11.25 14.53V9.75A.75.75 0 0 1 12 9Z" /></svg>
+            <span>Evolve AI Core Instructions</span>
+        </h2>
+        <button (click)="isAiEvolutionModalOpen.set(false)" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+      </header>
+      <main class="flex-grow flex p-4 gap-4 overflow-hidden">
+        <!-- Left Panel: Prompt History -->
+        <div class="w-1/3 bg-gray-900/50 rounded-lg border border-gray-700 flex flex-col">
+          <h3 class="p-3 text-lg font-semibold border-b border-gray-700">Prompt History</h3>
+          <div class="flex-grow overflow-y-auto">
+            @for(item of promptHistory(); track item.id; let i = $index) {
+              <div (click)="selectPromptFromHistory(item)" 
+                   class="p-3 border-b border-gray-700 cursor-pointer"
+                   [class.bg-purple-800/50]="selectedPromptFromHistory()?.id === item.id || activePromptId() === item.id && !selectedPromptFromHistory()"
+                   [class.hover:bg-gray-700/50]="selectedPromptFromHistory()?.id !== item.id && activePromptId() !== item.id">
+                <div class="flex justify-between items-center">
+                  <span class="text-sm font-bold">Version {{ promptHistory().length - i }}</span>
+                  @if(activePromptId() === item.id) {
+                    <span class="text-xs bg-green-600 text-white font-semibold px-2 py-0.5 rounded-full">Active</span>
+                  }
+                </div>
+                <p class="text-xs text-gray-400 mt-1">Created: {{ item.createdAt | date:'short' }}</p>
+              </div>
+            }
+          </div>
+          <div class="p-2 border-t border-gray-700">
+            <button (click)="resetAiPrompt()" class="w-full text-center text-sm text-red-400 hover:text-red-300 hover:bg-red-900/50 p-2 rounded">Reset to Default</button>
+          </div>
+        </div>
+
+        <!-- Right Panel: Prompt Details & Evolution -->
+        <div class="w-2/3 bg-gray-900/50 rounded-lg border border-gray-700 flex flex-col overflow-hidden">
+          @if(selectedPromptFromHistory(); as sel) {
+            <!-- Viewing History -->
+            <div class="p-3 border-b border-gray-700 flex-shrink-0">
+                <h3 class="text-lg font-semibold">Viewing Version {{ promptHistory().indexOf(sel) + 1 }}</h3>
+                <p class="text-xs text-gray-400">Created: {{ sel.createdAt | date:'short' }}</p>
+            </div>
+            <div class="flex-grow flex flex-col p-3 gap-2 overflow-y-auto">
+              <h4 class="font-semibold text-gray-300">Feedback Summary:</h4>
+              <pre class="text-xs text-gray-400 bg-gray-900 p-2 rounded-md whitespace-pre-wrap flex-shrink-0">{{ sel.feedbackSummary }}</pre>
+              
+              <h4 class="font-semibold text-gray-300 mt-2">Prompt Changes (vs. Active):</h4>
+              @if (promptDiff() && promptDiff()!.length > 0) {
+                  <div class="text-xs font-mono text-gray-400 bg-gray-900 p-2 rounded-md h-32 overflow-auto border border-gray-600">
+                      @for(item of promptDiff(); track item.line + item.type) {
+                          @if(item.type === 'removed') {
+                              <p class="text-red-400/80"><span class="mr-2 select-none">-</span>{{ item.line }}</p>
+                          }
+                          @if(item.type === 'added') {
+                              <p class="text-green-400/80"><span class="mr-2 select-none">+</span>{{ item.line }}</p>
+                          }
+                      }
+                  </div>
+              } @else {
+                  <div class="text-xs text-gray-500 bg-gray-900 p-2 rounded-md">
+                      <p>This is the current active prompt, or there are no differences.</p>
+                  </div>
+              }
+
+              <h4 class="font-semibold text-gray-300 mt-2">Full Prompt Text:</h4>
+              <textarea readonly class="w-full flex-grow bg-gray-900 p-2 rounded-md text-xs font-mono text-gray-400">{{ sel.prompt }}</textarea>
+            </div>
+            <footer class="p-3 border-t border-gray-700 flex justify-end">
+              <button (click)="makePromptActive(sel.id)" [disabled]="activePromptId() === sel.id" class="px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md disabled:bg-gray-500">Make Active</button>
+            </footer>
+          } @else {
+            <!-- Evolving Active Prompt -->
+             <div class="p-3 border-b border-gray-700 flex-shrink-0">
+                <h3 class="text-lg font-semibold">Evolve Active Prompt</h3>
+                <p class="text-xs text-gray-400">Use feedback to improve the AI's core instructions.</p>
+            </div>
+             <div class="flex-grow flex flex-col p-3 gap-2 overflow-y-auto">
+                <h4 class="font-semibold text-gray-300">User Feedback Summary:</h4>
+                <pre class="text-xs text-gray-400 bg-gray-900 p-2 rounded-md whitespace-pre-wrap flex-shrink-0">{{ evolutionFeedbackSummary() }}</pre>
+                
+                @if(newlyEvolvedPrompt(); as newPrompt) {
+                  <h4 class="font-semibold text-green-400 mt-2">New Evolved Prompt:</h4>
+                  <textarea readonly class="w-full h-48 bg-green-900/50 border-green-700 rounded-md text-xs font-mono text-green-200 p-2">{{ newPrompt }}</textarea>
+                } @else {
+                  <h4 class="font-semibold text-gray-300 mt-2">Current Active Prompt:</h4>
+                  <textarea [(ngModel)]="aiCorePrompt" class="w-full flex-grow bg-gray-900 p-2 rounded-md text-xs font-mono text-gray-400"></textarea>
+                }
+             </div>
+             <footer class="p-3 border-t border-gray-700 flex justify-end gap-2">
+                @if(newlyEvolvedPrompt()) {
+                  <button (click)="newlyEvolvedPrompt.set(null)" class="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-600 hover:bg-gray-500 rounded-md">Discard</button>
+                  <button (click)="acceptEvolvedPrompt()" class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md">Accept & Save New Version</button>
+                } @else {
+                  <button (click)="triggerAiEvolution()" 
+                          [disabled]="isEvolving() || evolutionFeedbackSummary().startsWith('No feedback')"
+                          class="px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md disabled:bg-gray-500 flex items-center gap-2">
+                    @if(isEvolving()) {
+                      <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                      <span>Evolving...</span>
+                    } @else {
+                      <span>Evolve Prompt</span>
+                    }
+                  </button>
+                }
+             </footer>
+          }
+        </div>
+      </main>
+    </div>
+  </div>
+}
+
+<!-- Chatbot -->
+@if (presentation(); as pres) {
+  @if(!isChatbotOpen()) {
+    <button (click)="isChatbotOpen.set(true)" title="Open AI Agent" class="fixed bottom-6 right-6 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg p-4 z-40 transition-transform hover:scale-110">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586zM12 6a2 2 0 100-4 2 2 0 000 4zM10 18a2 2 0 100-4 2 2 0 000 4zM4 10a2 2 0 100-4 2 2 0 000 4z" /></svg>
+    </button>
+  }
+  <app-chatbot 
+    [isOpen]="isChatbotOpen()" 
+    [presentation]="pres"
+    [currentSlideIndex]="currentSlideIndex()"
+    (presentationChange)="handleAgentUpdate($event)" 
+    (closeChat)="isChatbotOpen.set(false)"></app-chatbot>
+}

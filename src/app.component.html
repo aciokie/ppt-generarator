@@ -1,0 +1,380 @@
+<main class="h-full w-full bg-gray-900">
+  @switch (view()) {
+    @case ('landing') {
+      <div class="min-h-full flex flex-col justify-center items-center p-4 relative overflow-hidden">
+        <div class="absolute inset-0 z-0 h-full w-full bg-gray-900 animate-gradient-bg"></div>
+        <div class="w-full max-w-2xl z-10">
+          <div class="text-center">
+            <h1 class="text-5xl md:text-6xl font-extrabold bg-gradient-to-r from-purple-400 to-pink-500 text-transparent bg-clip-text">AI Presentation Generator</h1>
+            <p class="mt-4 text-lg text-gray-400">Transform your ideas into stunning presentations in seconds.</p>
+          </div>
+          
+          <div class="mt-10 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-2xl border border-gray-700">
+            <!-- Generation Mode Tabs -->
+            <div class="grid grid-cols-3 gap-2 p-2">
+              <button (click)="setGenerationMode('standard')" class="p-4 font-medium rounded-md transition-colors text-center text-sm group" [class.bg-purple-600]="generationMode() === 'standard'" [class.text-white]="generationMode() === 'standard'" [class.text-gray-300]="generationMode() !== 'standard'" [class.hover:bg-gray-700]="generationMode() !== 'standard'">
+                 <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-6 w-6 mb-2 text-purple-300 group-hover:text-purple-200 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                From Topic
+                <span class="block text-xs text-gray-400 mt-1">Generate from a simple idea.</span>
+              </button>
+              <button (click)="setGenerationMode('document')" class="p-4 font-medium rounded-md transition-colors text-center text-sm group" [class.bg-purple-600]="generationMode() === 'document'" [class.text-white]="generationMode() === 'document'" [class.text-gray-300]="generationMode() !== 'document'" [class.hover:bg-gray-700]="generationMode() !== 'document'">
+                <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-6 w-6 mb-2 text-purple-300 group-hover:text-purple-200 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                From Document
+                 <span class="block text-xs text-gray-400 mt-1">Use a PDF or PPTX as a source.</span>
+              </button>
+              <button (click)="setGenerationMode('external_ai')" class="p-4 font-medium rounded-md transition-colors text-center text-sm group" [class.bg-purple-600]="generationMode() === 'external_ai'" [class.text-white]="generationMode() === 'external_ai'" [class.text-gray-300]="generationMode() !== 'external_ai'" [class.hover:bg-gray-700]="generationMode() !== 'external_ai'">
+                <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-6 w-6 mb-2 text-purple-300 group-hover:text-purple-200 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+                Use External AI
+                 <span class="block text-xs text-gray-400 mt-1">Import JSON from another AI.</span>
+              </button>
+            </div>
+            
+            <div class="p-8">
+              <div class="space-y-6">
+                @switch (generationMode()) {
+                  @case ('standard') {
+                    <div class="relative">
+                      <label for="topic" class="block text-sm font-medium text-gray-300 mb-1">Presentation Topic</label>
+                      <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none top-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2H4zm3 2h6v4H7V4z" clip-rule="evenodd" /><path d="M7 13h6v-2H7v2z" /></svg>
+                      </div>
+                      <input type="text" id="topic" [ngModel]="topic()" (ngModelChange)="topic.set($event)"
+                             class="block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm p-3 text-white focus:ring-purple-500 focus:border-purple-500 pl-10"
+                             placeholder="e.g., The Future of Renewable Energy">
+                    </div>
+                    <div class="relative">
+                      <label for="audience" class="block text-sm font-medium text-gray-300 mb-1">Target Audience (Optional)</label>
+                      <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none top-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" /></svg>
+                      </div>
+                      <input type="text" id="audience" [ngModel]="audience()" (ngModelChange)="audience.set($event)"
+                             class="block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm p-3 text-white focus:ring-purple-500 focus:border-purple-500 pl-10"
+                             placeholder="e.g., University Students, Tech Investors">
+                    </div>
+                  }
+                  @case ('document') {
+                    <div>
+                      <label for="file-upload" class="block text-sm font-medium text-gray-300 mb-2">Upload PDF or PowerPoint</label>
+                      @if(!uploadedFile()) {
+                        <label for="file-upload" class="relative cursor-pointer mt-1 flex justify-center w-full px-6 pt-5 pb-6 border-2 border-gray-600 border-dashed rounded-md hover:border-purple-500 transition-colors">
+                           <div class="space-y-1 text-center">
+                            <svg class="mx-auto h-12 w-12 text-gray-500" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            <div class="flex text-sm text-gray-400">
+                                <p class="pl-1">Click to upload or drag and drop</p>
+                            </div>
+                            <p class="text-xs text-gray-500">PDF, PPTX up to 10MB</p>
+                            <input id="file-upload" name="file-upload" type="file" class="sr-only" (change)="onFileChange($event)" accept=".pdf,.pptx,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation">
+                          </div>
+                        </label>
+                      } @else {
+                        <div class="mt-2 flex items-center justify-between bg-gray-700/50 p-3 rounded-md border border-gray-600">
+                          <div class="flex items-center gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            </svg>
+                            <span class="text-sm font-medium text-gray-200 truncate">{{ uploadedFile()?.name }}</span>
+                          </div>
+                          <button (click)="clearFile()" class="text-gray-400 hover:text-white text-xl font-bold">&times;</button>
+                        </div>
+                      }
+                      <p class="text-center text-gray-500 text-sm mt-4">Uploading a file will start the generation process.</p>
+                    </div>
+                  }
+                  @case ('external_ai') {
+                    <!-- Stepper UI -->
+                    <div class="flex items-center w-full mb-6">
+                      <!-- Step 1 bubble -->
+                      <div class="flex items-center" [class.text-purple-400]="externalAiStep() === 1" [class.text-gray-500]="externalAiStep() !== 1">
+                        <div class="rounded-full h-8 w-8 flex items-center justify-center border-2 transition-colors" [class.border-purple-400]="externalAiStep() === 1" [class.border-gray-500]="externalAiStep() !== 1">1</div>
+                        <span class="ml-2 font-semibold transition-colors">Copy Prompt</span>
+                      </div>
+                      <!-- Line -->
+                      <div class="flex-auto border-t-2 mx-4 transition-colors" [class.border-gray-700]="externalAiStep() === 1" [class.border-purple-400]="externalAiStep() === 2"></div>
+                      <!-- Step 2 bubble -->
+                      <div class="flex items-center" [class.text-purple-400]="externalAiStep() === 2" [class.text-gray-500]="externalAiStep() !== 2">
+                        <div class="rounded-full h-8 w-8 flex items-center justify-center border-2 transition-colors" [class.border-purple-400]="externalAiStep() === 2" [class.border-gray-500]="externalAiStep() !== 2">2</div>
+                        <span class="ml-2 font-semibold transition-colors">Paste JSON</span>
+                      </div>
+                    </div>
+
+                    @if (externalAiStep() === 1) {
+                      <div>
+                        <p class="text-sm text-gray-400 mb-4">
+                          Copy the complete prompt and paste it into your preferred AI model (e.g., Claude, ChatGPT). 
+                          It will instruct the AI to generate JSON in the exact format this application needs.
+                        </p>
+                    
+                        @if (documentContentForPrompt()) {
+                          <!-- Document Mode UI -->
+                          <div class="space-y-4">
+                            <div class="bg-green-900/50 p-3 rounded-md border border-green-700">
+                                <p class="text-sm text-green-300">
+                                    <span class="font-bold">Using Document:</span> 
+                                    The content of '{{ uploadedFile()?.name }}' has been included in the full prompt.
+                                </p>
+                            </div>
+                    
+                            <!-- Collapsible Core Instructions -->
+                            <details class="bg-gray-900/50 rounded-md border border-gray-600">
+                                <summary class="p-3 cursor-pointer text-gray-300 hover:text-white">View Core AI Instructions</summary>
+                                <div class="p-3 border-t border-gray-600">
+                                    <pre class="w-full h-64 overflow-auto text-gray-400 font-mono text-xs whitespace-pre-wrap">{{ basePromptForDisplay() }}</pre>
+                                </div>
+                            </details>
+                            
+                            <button (click)="copyExternalAiPrompt()" 
+                                    class="w-full flex justify-center items-center gap-2 py-2.5 px-4 text-sm font-semibold text-white rounded-md transition-colors"
+                                    [class.bg-green-600]="isPromptCopied()"
+                                    [class.hover:bg-green-700]="isPromptCopied()"
+                                    [class.bg-purple-600]="!isPromptCopied()"
+                                    [class.hover:bg-purple-700]="!isPromptCopied()">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                              {{ isPromptCopied() ? 'Copied Full Prompt!' : 'Copy Full Prompt (Instructions + Document)' }}
+                            </button>
+                          </div>
+                        } @else {
+                          <!-- Standard Mode UI (no document) -->
+                          @if (isGenerationDisabled()) {
+                             <p class="text-sm text-yellow-400 bg-yellow-900/50 p-3 rounded-md border border-yellow-700 mb-4">
+                               Please enter a topic in the "From Topic" tab first to generate a specific prompt.
+                             </p>
+                          }
+                          <div class="relative">
+                            <textarea readonly [value]="externalAiPromptText()" rows="10" class="w-full bg-gray-900/80 border-gray-600 rounded-md shadow-sm p-3 text-gray-300 font-mono text-xs pr-20"></textarea>
+                            <button (click)="copyExternalAiPrompt()" 
+                                    class="absolute top-2 right-2 px-3 py-1.5 text-xs font-semibold text-white rounded-md transition-colors"
+                                    [class.bg-green-600]="isPromptCopied()"
+                                    [class.hover:bg-green-700]="isPromptCopied()"
+                                    [class.bg-purple-600]="!isPromptCopied()"
+                                    [class.hover:bg-purple-700]="!isPromptCopied()">
+                              {{ isPromptCopied() ? 'Copied!' : 'Copy' }}
+                            </button>
+                          </div>
+                        }
+                      </div>
+                    } @else {
+                      <div class="flex justify-between items-center mb-1">
+                        <label for="json-input" class="block text-sm font-medium text-gray-300">Paste JSON from External AI</label>
+                        <button type="button" (click)="externalAiStep.set(1)" class="text-sm text-purple-400 hover:text-purple-300">&larr; Back to Prompt</button>
+                      </div>
+                      <textarea id="json-input" [ngModel]="jsonInput()" (ngModelChange)="jsonInput.set($event)"
+                                rows="10"
+                                class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm p-3 text-white focus:ring-purple-500 focus:border-purple-500 font-mono text-xs"
+                                placeholder='Paste the generated JSON here...'></textarea>
+                    }
+                  }
+                }
+
+                <!-- Shared Options (only for standard/document modes) -->
+                @if (generationMode() !== 'external_ai') {
+                  <div>
+                    <label for="slide-count" class="block text-sm font-medium text-gray-300">Number of Slides: {{ slideCount() }}</label>
+                    <input type="range" id="slide-count" [ngModel]="slideCount()" (ngModelChange)="slideCount.set(+$event)" min="3" max="60" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-purple-500">
+                  </div>
+                   <div class="pt-2">
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Language</label>
+                    <div class="grid grid-cols-2 gap-2 rounded-lg bg-gray-900/50 p-1">
+                      <button (click)="language.set('English')"
+                              class="px-3 py-2 text-sm font-medium rounded-md transition-colors"
+                              [class.bg-purple-600]="language() === 'English'"
+                              [class.text-white]="language() === 'English'"
+                              [class.text-gray-300]="language() !== 'English'"
+                              [class.hover:bg-gray-700]="language() !== 'English'">
+                        English
+                      </button>
+                      <button (click)="language.set('Tagalog')"
+                              class="px-3 py-2 text-sm font-medium rounded-md transition-colors"
+                              [class.bg-purple-600]="language() === 'Tagalog'"
+                              [class.text-white]="language() === 'Tagalog'"
+                              [class.text-gray-300]="language() !== 'Tagalog'"
+                              [class.hover:bg-gray-700]="language() !== 'Tagalog'">
+                        Tagalog
+                      </button>
+                    </div>
+                  </div>
+                  <details class="bg-gray-900/30 rounded-md">
+                    <summary class="p-2 cursor-pointer text-sm font-medium text-gray-400 hover:text-white">Advanced Options</summary>
+                    <div class="p-4 space-y-4 border-t border-gray-700">
+                      <div class="flex items-center justify-between">
+                        <span class="flex-grow flex flex-col">
+                          <span class="text-sm font-medium text-gray-300">+ Google Search</span>
+                          <span class="text-xs text-gray-500">Use Google Search for up-to-date information.</span>
+                        </span>
+                        <label for="google-search-toggle" class="relative inline-flex items-center cursor-pointer">
+                          <input type="checkbox" [ngModel]="useGoogleSearch()" (ngModelChange)="useGoogleSearch.set($event)" id="google-search-toggle" class="sr-only peer">
+                          <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-4 peer-focus:ring-purple-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                        </label>
+                      </div>
+                      <div class="flex items-center justify-between">
+                        <span class="flex-grow flex flex-col">
+                          <span class="text-sm font-medium text-gray-300">Highest Quality</span>
+                          <span class="text-xs text-gray-500">Better results, but may be slightly slower.</span>
+                        </span>
+                        <label for="high-quality-toggle" class="relative inline-flex items-center cursor-pointer">
+                          <input type="checkbox" [ngModel]="highQuality()" (ngModelChange)="highQuality.set($event)" id="high-quality-toggle" class="sr-only peer">
+                          <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-4 peer-focus:ring-purple-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                        </label>
+                      </div>
+                    </div>
+                  </details>
+                }
+              </div> <!-- end space-y-6 -->
+              
+              <div class="mt-8">
+                <button (click)="startFlow()" [disabled]="isGenerationDisabled()"
+                        class="w-full flex justify-center items-center gap-2 py-3 px-4 text-lg font-semibold text-white bg-purple-600 rounded-md shadow-lg hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105">
+                  @if (generationMode() === 'external_ai' && externalAiStep() === 1) {
+                    <span>Next &rarr;</span>
+                  } @else {
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+                    </svg>
+                    <span>Generate Presentation</span>
+                  }
+                </button>
+              </div>
+            </div> <!-- end p-8 -->
+          </div> <!-- end bg-gray-800 -->
+        </div>
+
+        @if (history().length > 0) {
+          <div class="w-full max-w-2xl mt-8 z-10">
+            <h2 class="text-lg font-semibold text-gray-300 mb-2 text-center">Recent Presentations</h2>
+            <div class="space-y-2">
+              @for (item of history(); track item.id) {
+                <div (click)="loadFromHistory(item)"
+                     class="bg-gray-800/50 p-3 rounded-md cursor-pointer hover:bg-gray-700/50 border border-gray-700 flex justify-between items-center transition-all duration-200 group hover:border-purple-600/70 hover:scale-[1.02]">
+                  <div>
+                    <p class="font-bold text-white">{{ item.title }}</p>
+                    <p class="text-sm text-gray-400">{{ item.slideCount }} slides - Last updated: {{ item.updatedAt | date:'short' }}</p>
+                  </div>
+                  <div class="w-16 h-9 rounded-sm bg-cover bg-center flex-shrink-0" [style.background-color]="item.theme.backgroundColor"></div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- AI Choice Modal for Document Upload -->
+      @if(showAiChoiceModal()) {
+        <div class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg border border-gray-700 text-center p-8 animate-pop-in">
+            <h2 class="text-2xl font-bold text-white mb-4">How do you want to generate?</h2>
+            <p class="text-gray-400 mb-6">You've uploaded a document. You can either generate the presentation directly, or get a prompt to use with an external AI like Claude or ChatGPT.</p>
+            <div class="flex justify-center gap-4">
+              <button (click)="handleAiChoice('normal')" class="px-6 py-3 text-base font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md">Generate Directly</button>
+              <button (click)="handleAiChoice('external')" class="px-6 py-3 text-base font-medium text-gray-300 bg-gray-600 hover:bg-gray-500 rounded-md">Use External AI</button>
+            </div>
+             <button (click)="clearFile()" class="mt-6 text-sm text-gray-500 hover:text-gray-400">Cancel Upload</button>
+          </div>
+        </div>
+      }
+    }
+    @case ('theme') {
+      <div class="h-full flex flex-col items-center p-4 overflow-y-auto">
+        <div class="text-center w-full max-w-7xl relative pt-8">
+          <button (click)="view.set('landing')" class="absolute top-4 left-0 flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+              <span>Back</span>
+          </button>
+          <h2 class="text-4xl font-bold text-white mb-2">Select a Theme</h2>
+          <p class="text-lg text-gray-400">Choose a visual style for your presentation.</p>
+        </div>
+
+        <div class="w-full max-w-7xl flex-grow mt-8">
+          <!-- AI Suggestions -->
+          @if (isSuggestingThemes()) {
+            <div class="text-center py-10">
+              <div class="flex items-center justify-center gap-3 text-lg text-gray-300">
+                <svg class="animate-spin h-6 w-6 text-purple-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                AI is picking some themes for you...
+              </div>
+            </div>
+          } @else if (aiSuggestedThemes() && aiSuggestedThemes()!.length > 0) {
+            <div class="mb-12">
+              <h3 class="text-2xl font-bold text-white mb-6 text-center">AI Recommended</h3>
+              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                @for (theme of aiSuggestedThemes(); track theme.name) {
+                  <div (click)="startGeneration(theme)" class="cursor-pointer group">
+                    <div class="aspect-[16/9] w-full rounded-lg shadow-lg flex flex-col justify-center items-start p-4 text-center border-2 border-purple-500/50 group-hover:border-purple-500 transition-all duration-300 transform group-hover:scale-105"
+                        [style.background-color]="theme.backgroundColor"
+                        [style.color]="theme.textColor">
+                      <div class="w-full text-left">
+                        <h3 class="text-lg font-bold truncate" [style.color]="theme.primaryColor" [style.font-family]="theme.titleFont">{{ theme.name }}</h3>
+                      </div>
+                      <div class="flex-grow w-full flex flex-col justify-center items-start">
+                        <p class="text-2xl" [style.font-family]="theme.titleFont">Title Font</p>
+                        <p class="text-base mt-1" [style.font-family]="theme.bodyFont">Body Font</p>
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+            <div class="border-t border-gray-700 my-8"></div>
+          }
+
+          <!-- All Themes Section -->
+          <div class="text-center">
+              @if (aiSuggestedThemes() && aiSuggestedThemes()!.length > 0) {
+                  <h3 class="text-2xl font-bold text-white mb-6">All Themes</h3>
+              }
+              <!-- Theme Category Filters -->
+              <div class="flex flex-wrap justify-center gap-2 mb-8">
+                @for(category of themeCategories(); track category) {
+                  <button (click)="selectedThemeCategory.set(category)"
+                          class="px-4 py-2 text-sm font-medium rounded-full transition-colors"
+                          [class.bg-purple-600]="selectedThemeCategory() === category"
+                          [class.text-white]="selectedThemeCategory() === category"
+                          [class.text-gray-300]="selectedThemeCategory() !== category"
+                          [class.bg-gray-700]="selectedThemeCategory() !== category"
+                          [class.hover:bg-gray-600]="selectedThemeCategory() !== category">
+                    {{ category }}
+                  </button>
+                }
+              </div>
+          </div>
+          
+          <div class="w-full grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            @for (theme of filteredThemes(); track theme.name) {
+              <div (click)="startGeneration(theme)" class="cursor-pointer group">
+                <div class="aspect-[16/9] w-full rounded-lg shadow-lg flex flex-col justify-center items-start p-4 text-center border-2 border-gray-700 group-hover:border-purple-500 transition-all duration-300 transform group-hover:scale-105"
+                    [style.background-color]="theme.backgroundColor"
+                    [style.color]="theme.textColor">
+                  <div class="w-full text-left">
+                    <h3 class="text-lg font-bold truncate" [style.color]="theme.primaryColor" [style.font-family]="theme.titleFont">{{ theme.name }}</h3>
+                  </div>
+                  <div class="flex-grow w-full flex flex-col justify-center items-start">
+                    <p class="text-2xl" [style.font-family]="theme.titleFont">Title Font</p>
+                    <p class="text-base mt-1" [style.font-family]="theme.bodyFont">Body Font</p>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+    @case ('generating') {
+      @if (presentation(); as pres) {
+        <app-live-generation [presentationShell]="pres"></app-live-generation>
+      }
+    }
+    @case ('editor') {
+      <app-presentation-editor 
+        [presentation]="presentation()"
+        [availableFonts]="availableFonts"
+        (presentationChange)="handlePresentationChange($event)"
+        (exitEditor)="exitToLanding()"
+        (themeGenerated)="addNewTheme($event)"/>
+    }
+  }
+  <app-error-toast [message]="geminiService.error()" (closed)="geminiService.error.set(null)"></app-error-toast>
+</main>

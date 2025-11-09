@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="utf-8" />
+  <title>AI Presentation Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Lato:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;700&family=Orbitron:wght@400;700&family=Oswald:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Poppins:wght@400;700&family=Raleway:wght@400;700&family=Roboto+Slab:wght@400;700&family=Roboto:wght@400;700&family=Source+Code+Pro:wght@400;700&family=Turret+Road:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* For contenteditable placeholders */
+    [contenteditable][data-placeholder]:empty:before {
+      content: attr(data-placeholder);
+      color: #6b7280; /* gray-500 */
+      pointer-events: none;
+      display: block; /* For line-break */
+    }
+
+    /* Slide Transition Animations */
+    @keyframes slide-in-from-right {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .animate-slide-in-from-right {
+      animation: slide-in-from-right 0.4s ease-out forwards;
+    }
+
+    @keyframes slide-out-to-left {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(-100%); opacity: 0; }
+    }
+    .animate-slide-out-to-left {
+      animation: slide-out-to-left 0.4s ease-out forwards;
+    }
+
+    @keyframes slide-in-from-left {
+      from { transform: translateX(-100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .animate-slide-in-from-left {
+      animation: slide-in-from-left 0.4s ease-out forwards;
+    }
+
+    @keyframes slide-out-to-right {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(100%); opacity: 0; }
+    }
+    .animate-slide-out-to-right {
+      animation: slide-out-to-right 0.4s ease-out forwards;
+    }
+
+    @keyframes fade-in {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .animate-fade-in {
+      animation: fade-in 0.5s ease-in-out forwards;
+    }
+
+    @keyframes fade-out {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+    .animate-fade-out {
+      animation: fade-out 0.5s ease-in-out forwards;
+    }
+
+    /* Ken Burns effect for background images */
+    @keyframes kenburns-top {
+      0% {
+        transform: scale(1) translateY(0);
+        transform-origin: 50% 16%;
+      }
+      100% {
+        transform: scale(1.15) translateY(-10px);
+        transform-origin: top;
+      }
+    }
+    .animate-kenburns {
+      animation: kenburns-top 15s ease-out infinite alternate both;
+    }
+    
+    /* New UI Animations */
+    @keyframes pop-in {
+      from { transform: translateY(-10px) scale(0.98); opacity: 0; }
+      to { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    .animate-pop-in {
+      animation: pop-in 0.2s ease-out forwards;
+    }
+    
+    @keyframes pulse-border {
+      0%, 100% { border-color: #4b5563; } /* gray-600 */
+      50% { border-color: #8b5cf6; } /* purple-500 */
+    }
+    .animate-pulse-border {
+      animation: pulse-border 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes gradient-bg {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .animate-gradient-bg {
+      background: linear-gradient(-45deg, #111827, #3b0764, #1e1b4b, #0c243b);
+      background-size: 400% 400%;
+      animation: gradient-bg 25s ease infinite;
+    }
+
+  </style>
+<script type="importmap">
+{
+  "imports": {
+    "rxjs": "https://aistudiocdn.com/rxjs@^7.8.2?conditions=es2015",
+    "rxjs/operators": "https://aistudiocdn.com/rxjs@^7.8.2/operators?conditions=es2015",
+    "rxjs/ajax": "https://aistudiocdn.com/rxjs@^7.8.2/ajax?conditions=es2015",
+    "rxjs/webSocket": "https://aistudiocdn.com/rxjs@^7.8.2/webSocket?conditions=es2015",
+    "rxjs/testing": "https://aistudiocdn.com/rxjs@^7.8.2/testing?conditions=es2015",
+    "rxjs/fetch": "https://aistudiocdn.com/rxjs@^7.8.2/fetch?conditions=es2015",
+    "@angular/compiler": "https://next.esm.sh/@angular/compiler@^20.3.3?external=rxjs",
+    "@angular/core": "https://next.esm.sh/@angular/core@^20.3.3?external=rxjs",
+    "@angular/platform-browser": "https://next.esm.sh/@angular/platform-browser@^20.3.3?external=rxjs",
+    "@google/genai": "https://next.esm.sh/@google/genai@^1.22.0?external=rxjs",
+    "@angular/common": "https://next.esm.sh/@angular/common@^20.3.3?external=rxjs",
+    "@angular/forms": "https://next.esm.sh/@angular/forms@^20.3.3?external=rxjs",
+    "jszip": "https://next.esm.sh/jszip@^3.10.1?external=rxjs"
+  }
+}
+</script>
+  <script src="https://unpkg.com/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.min.mjs" type="module"></script>
+</head>
+<body class="h-full text-gray-200">
+  <app-root></app-root>
+</body>
+</html>

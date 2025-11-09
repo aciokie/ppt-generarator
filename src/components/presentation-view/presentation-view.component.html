@@ -1,0 +1,73 @@
+@if (presentation(); as pres) {
+  <div class="fixed inset-0 bg-gray-900 w-full h-full flex items-center justify-center select-none"
+       (mousemove)="handleMouseMove($event)"
+       (mouseleave)="handleMouseLeave()"
+       [class.cursor-none]="isLaserActive()">
+
+    <!-- Laser Pointer Effect -->
+    @if(isLaserActive()) {
+      <div class="pointer-events-none absolute top-0 left-0 w-5 h-5 rounded-full bg-red-500/80 shadow-[0_0_15px_8px_rgba(239,68,68,0.5)] z-50 transition-transform duration-75"
+           [style.transform]="'translate(' + laserPosition().x + 'px, ' + laserPosition().y + 'px) translate(-50%, -50%)'">
+      </div>
+    }
+
+    <!-- Slide Container -->
+    <div class="w-full h-full max-w-screen-2xl aspect-[16/9] bg-black relative overflow-hidden">
+        @if (transitioningSlide(); as ts) {
+          <div class="w-full h-full absolute inset-0" [class]="ts.animation">
+            <app-slide [slide]="ts.slide" 
+                       [theme]="pres.theme" />
+          </div>
+        }
+        @if (currentSlide(); as slide) {
+          <div class="w-full h-full absolute inset-0" [class]="animationClass()">
+            <app-slide [slide]="slide" [theme]="pres.theme" />
+          </div>
+        } @else {
+          <div class="w-full h-full flex items-center justify-center">
+             <p class="text-gray-400">No slide to display.</p>
+          </div>
+        }
+    </div>
+
+    <!-- UI Controls -->
+    <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/50 to-transparent transition-opacity duration-300"
+         [class.opacity-100]="showControls()"
+         [class.opacity-0]="!showControls()">
+      <div class="max-w-screen-2xl mx-auto flex justify-between items-center text-white">
+        <!-- Left Controls -->
+        <div class="flex items-center gap-4">
+          <button (click)="openPresenterNotes()" class="px-3 py-2 bg-black/30 hover:bg-black/60 rounded-md font-semibold flex items-center gap-2 text-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm3 2h6v4H7V5z" clip-rule="evenodd" />
+              <path d="M7 13h6v-2H7v2z" />
+            </svg>
+            Presenter View
+          </button>
+          <!-- Slide Counter -->
+          <div class="text-lg font-semibold bg-black/30 px-3 py-1 rounded-md">
+            {{ currentSlideIndex() + 1 }} / {{ pres.slides.length }}
+          </div>
+        </div>
+        
+        <!-- Navigation Buttons (Center) -->
+        <div class="flex items-center gap-2 absolute left-1/2 -translate-x-1/2">
+          <button (click)="previousSlide()" [disabled]="currentSlideIndex() === 0" class="p-2 bg-black/30 rounded-full hover:bg-black/60 disabled:opacity-50 disabled:cursor-not-allowed">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+          </button>
+          <button (click)="nextSlide()" [disabled]="currentSlideIndex() === pres.slides.length - 1" class="p-2 bg-black/30 rounded-full hover:bg-black/60 disabled:opacity-50 disabled:cursor-not-allowed">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+          </button>
+        </div>
+
+        <!-- Exit Button (Right) -->
+        <button (click)="triggerExit()" title="Exit Presentation (Esc or Tab)" class="px-4 py-2 bg-red-600/80 hover:bg-red-700 rounded-md font-semibold flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
+          Exit
+        </button>
+      </div>
+    </div>
+  </div>
+}
