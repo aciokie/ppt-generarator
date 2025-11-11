@@ -12,6 +12,7 @@ import { Slide, Theme, SlideLayout } from '../../types';
 export class SlideComponent {
   slide = input.required<Slide>();
   theme = input.required<Theme>();
+  isPreview = input(false);
 
   slideChange = output<Slide>();
   generateImage = output<{ style: string, aspectRatio: string }>();
@@ -70,7 +71,7 @@ export class SlideComponent {
 
   protected readonly pairedListContent = computed(() => {
     const layout = this.slide().layout;
-    const pairedLayouts: SlideLayout[] = ['timeline', 'process', 'stats_highlight'];
+    const pairedLayouts: SlideLayout[] = ['timeline', 'process', 'stats_highlight', 'alternating_feature_list', 'faq', 'kpi_dashboard_three', 'kpi_dashboard_four'];
     if (!pairedLayouts.includes(layout)) {
       return [];
     }
@@ -82,6 +83,38 @@ export class SlideComponent {
       }
     }
     return pairs;
+  });
+
+  protected readonly featureListIconsContent = computed(() => {
+    if (this.slide().layout !== 'feature_list_icons') return [];
+    const content = this.normalizedContent();
+    const items: { icon: string, text: string }[] = [];
+    // The prompt says pairs of (icon, text).
+    for (let i = 0; i < content.length; i += 2) {
+      if (content[i] !== undefined) {
+        items.push({ icon: content[i], text: content[i + 1] || '' });
+      }
+    }
+    return items;
+  });
+
+  protected readonly prosAndConsContent = computed(() => {
+    if (this.slide().layout !== 'pros_and_cons') return null;
+    const content = this.normalizedContent();
+    const separatorIndex = content.indexOf('---');
+
+    if (separatorIndex === -1) {
+      // Fallback if separator is missing, splitting the content in half
+      const midpoint = Math.ceil(content.length / 2);
+      return {
+        pros: content.slice(0, midpoint),
+        cons: content.slice(midpoint)
+      };
+    }
+    return {
+      pros: content.slice(0, separatorIndex),
+      cons: content.slice(separatorIndex + 1)
+    };
   });
   
   private readonly chartTopValue = computed(() => {
@@ -228,6 +261,87 @@ export class SlideComponent {
     };
     return swotData;
   });
+
+  protected readonly comparisonContent = computed(() => {
+    if (this.slide().layout !== 'comparison') return null;
+    const content = this.normalizedContent();
+    const separatorIndex = content.indexOf('---');
+
+    if (separatorIndex === -1) {
+      // Fallback if separator is missing, splitting the content in half
+      const midpoint = Math.ceil(content.length / 2);
+      const titleA = content.length > 0 ? 'Item A' : '';
+      const titleB = content.length > 1 ? 'Item B' : '';
+      return {
+        itemA: { title: titleA, points: content.slice(0, midpoint) },
+        itemB: { title: titleB, points: content.slice(midpoint) }
+      };
+    }
+
+    return {
+      itemA: { title: content[0] || '', points: content.slice(1, separatorIndex) },
+      itemB: { title: content[separatorIndex + 1] || '', points: content.slice(separatorIndex + 2) }
+    };
+  });
+
+  protected readonly teamMembersContent = computed(() => {
+    if (this.slide().layout !== 'team_members_four') return [];
+    const content = this.normalizedContent();
+    const members: { name: string, title: string }[] = [];
+    for (let i = 0; i < content.length; i += 2) {
+      if (content[i] !== undefined) {
+        members.push({ name: content[i], title: content[i + 1] || '' });
+      }
+    }
+    return members.slice(0, 4); // Max 4 members for this layout
+  });
+
+  protected readonly radialDiagramContent = computed(() => {
+    if (this.slide().layout !== 'radial_diagram') return null;
+    const content = this.normalizedContent();
+    if (content.length === 0) return { center: 'Center', satellites: [] };
+    return {
+      center: content[0],
+      satellites: content.slice(1, 7) // max 6 satellites
+    };
+  });
+
+  protected readonly stepFlowContent = computed(() => {
+    if (this.slide().layout !== 'step_flow') return [];
+    return this.normalizedContent().slice(0, 5); // Max 5 steps
+  });
+
+  protected readonly hubAndSpokeContent = computed(() => {
+    if (this.slide().layout !== 'hub_and_spoke') return null;
+    const content = this.normalizedContent();
+    if (content.length === 0) return { center: '', spokes: [] };
+    return {
+      center: content[0],
+      spokes: content.slice(1, 7), // Max 6 spokes
+    };
+  });
+
+  protected readonly cycleDiagramContent = computed(() => {
+    if (this.slide().layout !== 'cycle_diagram') return [];
+    return this.normalizedContent().slice(0, 5); // Max 5 steps
+  });
+
+  protected readonly vennDiagramContent = computed(() => {
+    if (this.slide().layout !== 'venn_diagram') return null;
+    const content = this.normalizedContent();
+    // Expects [TitleA, TextA, TitleB, TextB, TitleIntersect, TextIntersect]
+    return {
+      itemA: { title: content[0] || '', text: content[1] || '' },
+      itemB: { title: content[2] || '', text: content[3] || '' },
+      intersection: { title: content[4] || '', text: content[5] || '' },
+    };
+  });
+
+  protected readonly alternatingFeatureListContent = computed(() => {
+    if (this.slide().layout !== 'alternating_feature_list') return [];
+    return this.pairedListContent();
+  });
+
 
   onContentChange(field: 'title' | 'content' | 'speakerNotes' | 'column_title' | 'column_text' | 'item1' | 'item2', event: Event, index?: number): void {
     const target = event.target as HTMLElement;

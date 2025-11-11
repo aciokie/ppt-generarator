@@ -17,7 +17,7 @@ import { SlideComponent } from '../slide/slide.component';
           <h2 class="text-2xl text-gray-300">AI is writing your presentation...</h2>
         </div>
         <div class="w-full max-w-6xl aspect-[16/9] shadow-2xl bg-gray-900 rounded-lg overflow-hidden">
-            <app-slide [slide]="displaySlide()!" [theme]="pres.theme"></app-slide>
+            <app-slide [slide]="displaySlide()!" [theme]="pres.theme" [isPreview]="true"></app-slide>
         </div>
         <div class="mt-4 text-gray-400">
           Slide {{ currentSlideIndex() + 1 }} / {{ totalSlides() }}

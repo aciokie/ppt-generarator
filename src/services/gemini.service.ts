@@ -48,7 +48,20 @@ export class GeminiService {
       title: { type: Type.STRING },
       content: { type: Type.ARRAY, items: { type: Type.STRING } },
       imagePrompt: { type: Type.STRING },
-      layout: { type: Type.STRING, enum: ['title', 'content_left', 'content_right', 'section_header', 'conclusion', 'two_column', 'three_column', 'quote', 'image_full_bleed', 'table', 'chart_bar', 'chart_line', 'chart_pie', 'chart_doughnut', 'timeline', 'process', 'stats_highlight', 'pyramid', 'funnel', 'swot'] },
+      layout: { type: Type.STRING, enum: [
+        'title', 'content_left', 'content_right', 'section_header', 'conclusion', 'two_column', 
+        'three_column', 'quote', 'image_full_bleed', 'table', 'chart_bar', 'chart_line', 
+        'chart_pie', 'chart_doughnut', 'timeline', 'process', 'stats_highlight', 'pyramid', 
+        'funnel', 'swot', 'comparison', 'team_members_four', 'radial_diagram', 'step_flow', 
+        'image_overlap_left', 'hub_and_spoke', 'cycle_diagram', 'venn_diagram', 'alternating_feature_list',
+        'quadrant_chart', 'bridge_chart', 'gantt_chart_simple', 'org_chart', 'mind_map', 
+        'fishbone_diagram', 'area_chart', 'scatter_plot', 'bubble_chart', 'image_grid_four',
+        'image_with_caption_below', 'text_over_image', 'quote_with_image', 'feature_highlight_image',
+        'image_collage', 'image_focus_left', 'image_focus_right', 'checklist', 'numbered_list_large',
+        'step_flow_vertical', 'circular_flow', 'staggered_list', 'feature_list_icons', 'pros_and_cons',
+        'kpi_dashboard_three', 'kpi_dashboard_four', 'target_vs_actual', 'faq', 'call_to_action',
+        'world_map_pins'
+      ] },
       speakerNotes: { type: Type.ARRAY, items: { type: Type.STRING } },
       tableData: {
           type: Type.ARRAY,
@@ -507,14 +520,16 @@ ${documentText}
         } catch (e) {
           const err = e as any;
           const isRateLimitError = err?.error?.status === 'RESOURCE_EXHAUSTED';
+          // Check for the specific 500 Internal error from the API
+          const isServerError = err?.error?.code === 500 && err?.error?.status === 'INTERNAL';
 
-          if (isRateLimitError && attempt < maxRetries - 1) {
-              console.warn(`Rate limit hit on attempt ${attempt + 1}. Retrying in ${delay / 1000}s...`);
+          if ((isRateLimitError || isServerError) && attempt < maxRetries - 1) {
+              console.warn(`Image generation failed on attempt ${attempt + 1} with a retryable error (${err?.error?.status}). Retrying in ${delay / 1000}s...`);
               await new Promise(res => setTimeout(res, delay));
               delay *= 2; // Exponential backoff
               attempt++;
           } else {
-              throw e; // Re-throw the error if it's not a rate limit error or if retries are exhausted
+              throw e; // Re-throw the error if it's not a retryable error or if retries are exhausted
           }
         }
       }
@@ -933,7 +948,20 @@ CRITICAL: Return only the resulting plain text in ${language}. Do not include an
                         find_text: { type: Type.STRING },
                         replace_text: { type: Type.STRING },
                         slide_index: { type: Type.INTEGER, description: "The 1-based index of the slide to target." },
-                        new_layout: { type: Type.STRING, enum: ['title', 'content_left', 'content_right', 'section_header', 'conclusion', 'two_column', 'three_column', 'quote', 'image_full_bleed', 'table', 'chart_bar', 'chart_line', 'chart_pie', 'chart_doughnut', 'timeline', 'process', 'stats_highlight', 'pyramid', 'funnel', 'swot'], description: "The new layout name." }
+                        new_layout: { type: Type.STRING, enum: [
+                          'title', 'content_left', 'content_right', 'section_header', 'conclusion', 'two_column', 
+                          'three_column', 'quote', 'image_full_bleed', 'table', 'chart_bar', 'chart_line', 
+                          'chart_pie', 'chart_doughnut', 'timeline', 'process', 'stats_highlight', 'pyramid', 
+                          'funnel', 'swot', 'comparison', 'team_members_four', 'radial_diagram', 'step_flow', 
+                          'image_overlap_left', 'hub_and_spoke', 'cycle_diagram', 'venn_diagram', 'alternating_feature_list',
+                          'quadrant_chart', 'bridge_chart', 'gantt_chart_simple', 'org_chart', 'mind_map', 
+                          'fishbone_diagram', 'area_chart', 'scatter_plot', 'bubble_chart', 'image_grid_four',
+                          'image_with_caption_below', 'text_over_image', 'quote_with_image', 'feature_highlight_image',
+                          'image_collage', 'image_focus_left', 'image_focus_right', 'checklist', 'numbered_list_large',
+                          'step_flow_vertical', 'circular_flow', 'staggered_list', 'feature_list_icons', 'pros_and_cons',
+                          'kpi_dashboard_three', 'kpi_dashboard_four', 'target_vs_actual', 'faq', 'call_to_action',
+                          'world_map_pins'
+                        ], description: "The new layout name." }
                     },
                     description: "Parameters for the action."
                 },
@@ -1157,7 +1185,7 @@ Your entire response must be ONLY the raw, rewritten prompt text. Do NOT include
     - Content: ${JSON.stringify(slide.content)}
 
     **Available Layouts:**
-    'title', 'content_left', 'content_right', 'section_header', 'conclusion', 'two_column', 'three_column', 'quote', 'image_full_bleed', 'table', 'chart_bar', 'chart_line', 'chart_pie', 'chart_doughnut', 'timeline', 'process', 'stats_highlight', 'pyramid', 'funnel', 'swot'
+    'title', 'content_left', 'content_right', 'section_header', 'conclusion', 'two_column', 'three_column', 'quote', 'image_full_bleed', 'table', 'chart_bar', 'chart_line', 'chart_pie', 'chart_doughnut', 'timeline', 'process', 'stats_highlight', 'pyramid', 'funnel', 'swot', 'comparison', 'team_members_four', 'radial_diagram', 'step_flow'
 
     **Your Task:**
     Based on the structure and amount of content, return the single most appropriate layout name from the list above.
@@ -1175,7 +1203,7 @@ Your entire response must be ONLY the raw, rewritten prompt text. Do NOT include
         });
         const layout = response.text.trim() as SlideLayout;
         // Basic validation
-        const validLayouts: SlideLayout[] = ['title', 'content_left', 'content_right', 'section_header', 'conclusion', 'two_column', 'three_column', 'quote', 'image_full_bleed', 'table', 'chart_bar', 'chart_line', 'chart_pie', 'chart_doughnut', 'timeline', 'process', 'stats_highlight', 'pyramid', 'funnel', 'swot'];
+        const validLayouts: SlideLayout[] = ['title', 'content_left', 'content_right', 'section_header', 'conclusion', 'two_column', 'three_column', 'quote', 'image_full_bleed', 'table', 'chart_bar', 'chart_line', 'chart_pie', 'chart_doughnut', 'timeline', 'process', 'stats_highlight', 'pyramid', 'funnel', 'swot', 'comparison', 'team_members_four', 'radial_diagram', 'step_flow', 'image_overlap_left', 'hub_and_spoke', 'cycle_diagram', 'venn_diagram', 'alternating_feature_list'];
         if (validLayouts.includes(layout)) {
             return layout;
         }

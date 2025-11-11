@@ -221,31 +221,66 @@
   
         <!-- Right Sidebar -->
         <aside class="transition-all duration-300 ease-in-out bg-gray-900/50 flex flex-col" [class.w-96]="isRightSidebarOpen()" [class.w-0]="!isRightSidebarOpen()">
-          <div class="p-4 overflow-y-auto flex-grow flex flex-col" [class.opacity-100]="isRightSidebarOpen()" [class.opacity-0]="!isRightSidebarOpen()" [class.delay-150]="isRightSidebarOpen()">
-              <h3 class="text-xl font-bold mb-4">Speaker Notes</h3>
-              <div class="flex-grow bg-gray-800/50 rounded-lg p-3 space-y-2">
-                @for(note of normalizedSpeakerNotes(); track i; let i = $index) {
-                  <div class="relative group">
-                    <p contenteditable="true" (blur)="updateSpeakerNote($event, i)" class="w-full p-1 rounded hover:bg-gray-700 focus:bg-gray-700 outline-none">{{ note }}</p>
-                    <button (click)="openContentImprover({ field: 'speakerNotes', index: i })" title="Improve with AI" class="absolute right-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-purple-400 hover:text-purple-300 p-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z" /></svg>
-                    </button>
+          <div class="overflow-hidden flex-grow flex flex-col" [class.opacity-100]="isRightSidebarOpen()" [class.opacity-0]="!isRightSidebarOpen()" [class.delay-150]="isRightSidebarOpen()">
+            <!-- Tab Headers -->
+            <div class="flex border-b border-gray-700 flex-shrink-0">
+              <button (click)="rightSidebarTab.set('notes')" class="flex-1 p-3 text-sm font-medium transition-colors" [class]="rightSidebarTab() === 'notes' ? 'text-white bg-gray-800' : 'text-gray-400 hover:bg-gray-700/50'">Notes</button>
+              <button (click)="rightSidebarTab.set('actions')" class="flex-1 p-3 text-sm font-medium transition-colors" [class]="rightSidebarTab() === 'actions' ? 'text-white bg-gray-800' : 'text-gray-400 hover:bg-gray-700/50'">Actions</button>
+              <button (click)="rightSidebarTab.set('layouts')" class="flex-1 p-3 text-sm font-medium transition-colors" [class]="rightSidebarTab() === 'layouts' ? 'text-white bg-gray-800' : 'text-gray-400 hover:bg-gray-700/50'">Layouts</button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="p-4 overflow-y-auto flex-grow">
+              @switch(rightSidebarTab()) {
+                @case('notes') {
+                  <div class="flex flex-col h-full">
+                    <h3 class="text-xl font-bold mb-4 flex-shrink-0">Speaker Notes</h3>
+                    <div class="flex-grow bg-gray-800/50 rounded-lg p-3 space-y-2 overflow-y-auto">
+                      @for(note of normalizedSpeakerNotes(); track i; let i = $index) {
+                        <div class="relative group">
+                          <p contenteditable="true" (blur)="updateSpeakerNote($event, i)" class="w-full p-1 rounded hover:bg-gray-700 focus:bg-gray-700 outline-none">{{ note }}</p>
+                          <button (click)="openContentImprover({ field: 'speakerNotes', index: i })" title="Improve with AI" class="absolute right-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-purple-400 hover:text-purple-300 p-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z" /></svg>
+                          </button>
+                        </div>
+                      }
+                    </div>
+                    <div class="mt-4 flex flex-col gap-2 flex-shrink-0">
+                      <button title="Generate speaker notes for this slide" (click)="generateNotesForCurrentSlide()" class="w-full text-sm p-2 bg-purple-600 hover:bg-purple-700 rounded">Generate Notes</button>
+                      <button title="Improve all notes on this slide" (click)="improveAllSpeakerNotes()" class="w-full text-sm p-2 bg-gray-700 hover:bg-gray-600 rounded">Improve All Notes</button>
+                    </div>
                   </div>
                 }
-              </div>
-              <div class="mt-4 flex flex-col gap-2">
-                <button title="Generate speaker notes for this slide" (click)="generateNotesForCurrentSlide()" class="w-full text-sm p-2 bg-purple-600 hover:bg-purple-700 rounded">Generate Notes</button>
-                <button title="Improve all notes on this slide" (click)="improveAllSpeakerNotes()" class="w-full text-sm p-2 bg-gray-700 hover:bg-gray-600 rounded">Improve All Notes</button>
-              </div>
-
-              <div class="border-t border-gray-700 my-6"></div>
-
-              <h3 class="text-xl font-bold mb-4">AI Actions</h3>
-              <div class="grid grid-cols-2 gap-2">
-                  <button title="Improve slide title" (click)="improveTitle()" class="text-sm p-2 bg-gray-700 hover:bg-gray-600 rounded">Improve Title</button>
-                  <button title="Improve all bullet points" (click)="improveAllBulletPoints()" class="text-sm p-2 bg-gray-700 hover:bg-gray-600 rounded">Improve Bullets</button>
-                  <button title="Let AI suggest a better slide order" (click)="smartReorder()" class="text-sm p-2 bg-gray-700 hover:bg-gray-600 rounded col-span-2">Smart Reorder Slides</button>
-              </div>
+                @case('actions') {
+                  <h3 class="text-xl font-bold mb-4">AI Actions</h3>
+                  <div class="grid grid-cols-2 gap-2">
+                      <button title="Improve slide title" (click)="improveTitle()" class="text-sm p-2 bg-gray-700 hover:bg-gray-600 rounded">Improve Title</button>
+                      <button title="Improve all bullet points" (click)="improveAllBulletPoints()" class="text-sm p-2 bg-gray-700 hover:bg-gray-600 rounded">Improve Bullets</button>
+                      <button title="Let AI suggest a better slide layout" (click)="suggestLayoutForCurrentSlide()" class="text-sm p-2 bg-gray-700 hover:bg-gray-600 rounded">Suggest Layout</button>
+                      <button title="Regenerate this slide from scratch" (click)="regenerateCurrentSlide()" class="text-sm p-2 bg-gray-700 hover:bg-gray-600 rounded">Regenerate Slide</button>
+                      <button title="Let AI suggest a better slide order" (click)="smartReorder()" class="text-sm p-2 bg-gray-700 hover:bg-gray-600 rounded col-span-2">Smart Reorder Slides</button>
+                  </div>
+                }
+                 @case('layouts') {
+                  <h3 class="text-xl font-bold mb-4">Change Layout</h3>
+                   <div class="grid grid-cols-3 gap-2">
+                    @for(layout of availableLayouts; track layout.name) {
+                      <button (click)="changeLayout(layout.name)" 
+                              title="{{ layout.description }}"
+                              class="aspect-square flex flex-col items-center justify-center p-2 rounded-md transition-colors text-gray-300"
+                              [class.bg-purple-600]="currentSlide()?.layout === layout.name"
+                              [class.text-white]="currentSlide()?.layout === layout.name"
+                              [class.bg-gray-700/50]="currentSlide()?.layout !== layout.name"
+                              [class.hover:bg-gray-700]="currentSlide()?.layout !== layout.name"
+                      >
+                         <span class="material-symbols-outlined">{{ layout.icon }}</span>
+                         <span class="text-xs text-center mt-1 capitalize">{{ layout.displayName }}</span>
+                      </button>
+                    }
+                  </div>
+                }
+              }
+            </div>
           </div>
         </aside>
         <button (click)="isRightSidebarOpen.set(!isRightSidebarOpen())"
@@ -498,10 +533,10 @@
                   <div class="text-xs font-mono text-gray-400 bg-gray-900 p-2 rounded-md h-32 overflow-auto border border-gray-600">
                       @for(item of promptDiff(); track item.line + item.type) {
                           @if(item.type === 'removed') {
-                              <p class="text-red-400/80"><span class="mr-2 select-none">-</span>{{ item.line }}</p>
+                              <p class="text-red-400/80"><span class="mr-2 select-none">-</span>{{ item.text }}</p>
                           }
                           @if(item.type === 'added') {
-                              <p class="text-green-400/80"><span class="mr-2 select-none">+</span>{{ item.line }}</p>
+                              <p class="text-green-400/80"><span class="mr-2 select-none">+</span>{{ item.text }}</p>
                           }
                       }
                   </div>

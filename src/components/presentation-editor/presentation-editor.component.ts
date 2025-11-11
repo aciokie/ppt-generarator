@@ -87,27 +87,69 @@ export class PresentationEditorComponent {
     textColor: ['#1f2937', '#374151', '#4b5563', '#6b7280', '#d1d5db', '#f9fafb', '#e5e5e5', '#e0f2fe'],
   };
 
-  readonly availableLayouts: { name: SlideLayout; description: string; icon: string }[] = [
-    { name: 'title', description: 'A standard title and subtitle slide.', icon: 'title' },
-    { name: 'section_header', description: 'A bold header to introduce a new section.', icon: 'section_header' },
-    { name: 'content_left', description: 'Content on the left, media on the right.', icon: 'content_left' },
-    { name: 'content_right', description: 'Media on the left, content on the right.', icon: 'content_right' },
-    { name: 'two_column', description: 'Splits content into two readable columns.', icon: 'two_column' },
-    { name: 'three_column', description: 'Three distinct points with titles and text.', icon: 'three_column' },
-    { name: 'quote', description: 'Highlight an impactful quote.', icon: 'quote' },
-    { name: 'image_full_bleed', description: 'A full-screen image with overlayed text.', icon: 'image_full_bleed' },
-    { name: 'stats_highlight', description: 'Showcase key numbers or statistics.', icon: 'stats_highlight' },
-    { name: 'table', description: 'Display structured data in a table format.', icon: 'table' },
-    { name: 'chart_bar', description: 'Visualize categorical data with bar charts.', icon: 'chart_bar' },
-    { name: 'chart_line', description: 'Show trends over time with a line chart.', icon: 'chart_line' },
-    { name: 'chart_pie', description: 'Represent proportions with a pie chart.', icon: 'chart_pie' },
-    { name: 'chart_doughnut', description: 'A pie chart with a hole, for proportions.', icon: 'chart_doughnut' },
-    { name: 'timeline', description: 'Display events in chronological order.', icon: 'timeline' },
-    { name: 'process', description: 'Illustrate a step-by-step process.', icon: 'process' },
-    { name: 'pyramid', description: 'Show hierarchical relationships.', icon: 'pyramid' },
-    { name: 'funnel', description: 'Visualize stages in a process, like sales.', icon: 'funnel' },
-    { name: 'swot', description: 'A 2x2 grid for SWOT analysis.', icon: 'swot' },
-    { name: 'conclusion', description: 'A final, concluding slide.', icon: 'conclusion' },
+  readonly availableLayouts: { name: SlideLayout; displayName: string; description: string; icon: string }[] = [
+    // Original
+    { name: 'title', displayName: 'Title', description: 'A standard title and subtitle slide.', icon: 'title' },
+    { name: 'section_header', displayName: 'Section Header', description: 'A bold header to introduce a new section.', icon: 'article' },
+    { name: 'content_left', displayName: 'Content Left', description: 'Content on the left, media on the right.', icon: 'vertical_split' },
+    { name: 'content_right', displayName: 'Content Right', description: 'Media on the left, content on the right.', icon: 'flip_to_back' },
+    { name: 'two_column', displayName: 'Two Column', description: 'Splits content into two readable columns.', icon: 'view_column' },
+    { name: 'three_column', displayName: 'Three Column', description: 'Three distinct points with titles and text.', icon: 'view_module' },
+    { name: 'quote', displayName: 'Quote', description: 'Highlight an impactful quote.', icon: 'format_quote' },
+    { name: 'image_full_bleed', displayName: 'Image Full Bleed', description: 'A full-screen image with overlayed text.', icon: 'image' },
+    { name: 'stats_highlight', displayName: 'Stats Highlight', description: 'Showcase key numbers or statistics.', icon: 'equalizer' },
+    { name: 'comparison', displayName: 'Comparison', description: 'A side-by-side comparison of two items.', icon: 'compare_arrows' },
+    { name: 'team_members_four', displayName: 'Team Members', description: 'Showcase up to four team members.', icon: 'groups' },
+    { name: 'timeline', displayName: 'Timeline', description: 'Display events in chronological order.', icon: 'timeline' },
+    { name: 'process', displayName: 'Process', description: 'Illustrate a step-by-step process.', icon: 'account_tree' },
+    { name: 'pyramid', displayName: 'Pyramid', description: 'Show hierarchical relationships.', icon: 'signal_cellular_alt' },
+    { name: 'funnel', displayName: 'Funnel', description: 'Visualize stages in a process, like sales.', icon: 'filter_list' },
+    { name: 'swot', displayName: 'SWOT', description: 'A 2x2 grid for SWOT analysis.', icon: 'grid_view' },
+    { name: 'radial_diagram', displayName: 'Radial Diagram', description: 'A central topic with radiating points.', icon: 'explore' },
+    { name: 'step_flow', displayName: 'Step Flow', description: 'A horizontal flow of steps or stages.', icon: 'double_arrow' },
+    { name: 'table', displayName: 'Table', description: 'Display structured data in a table format.', icon: 'table_chart' },
+    { name: 'chart_bar', displayName: 'Bar Chart', description: 'Visualize categorical data with bar charts.', icon: 'bar_chart' },
+    { name: 'chart_line', displayName: 'Line Chart', description: 'Show trends over time with a line chart.', icon: 'show_chart' },
+    { name: 'chart_pie', displayName: 'Pie Chart', description: 'Represent proportions with a pie chart.', icon: 'pie_chart' },
+    { name: 'chart_doughnut', displayName: 'Doughnut Chart', description: 'A pie chart with a hole, for proportions.', icon: 'donut_small' },
+    { name: 'conclusion', displayName: 'Conclusion', description: 'A final, concluding slide.', icon: 'flag' },
+    // Advanced
+    { name: 'image_overlap_left', displayName: 'Image Overlap', description: 'Text block overlapping a large background image.', icon: 'layers' },
+    { name: 'alternating_feature_list', displayName: 'Alternating List', description: 'A vertical list with alternating content.', icon: 'view_timeline' },
+    { name: 'hub_and_spoke', displayName: 'Hub & Spoke', description: 'A central topic with connected points.', icon: 'hub' },
+    { name: 'cycle_diagram', displayName: 'Cycle Diagram', description: 'Illustrates a continuous, circular process.', icon: 'loop' },
+    { name: 'venn_diagram', displayName: 'Venn Diagram', description: 'Show the overlap between two concepts.', icon: 'view_cozy' },
+    // New 30
+    { name: 'quadrant_chart', displayName: 'Quadrant Chart', description: 'A 2x2 matrix for analysis (e.g., BCG).', icon: 'dashboard_customize' },
+    { name: 'bridge_chart', displayName: 'Bridge Chart', description: 'Shows cumulative effect of positive/negative values.', icon: 'waterfall_chart' },
+    { name: 'gantt_chart_simple', displayName: 'Gantt Chart', description: 'A simple project timeline chart.', icon: 'bar_chart_4_bars' },
+    { name: 'org_chart', displayName: 'Org Chart', description: 'Display a hierarchical organizational structure.', icon: 'account_tree' },
+    { name: 'mind_map', displayName: 'Mind Map', description: 'A central idea with organic branches.', icon: 'share' },
+    { name: 'fishbone_diagram', displayName: 'Fishbone Diagram', description: 'A cause-and-effect (Ishikawa) diagram.', icon: 'mediation' },
+    { name: 'area_chart', displayName: 'Area Chart', description: 'A line chart with the area below it filled in.', icon: 'area_chart' },
+    { name: 'scatter_plot', displayName: 'Scatter Plot', description: 'Shows the relationship between two variables.', icon: 'scatter_plot' },
+    { name: 'bubble_chart', displayName: 'Bubble Chart', description: 'A scatter plot where bubble size adds a third dimension.', icon: 'bubble_chart' },
+    { name: 'image_grid_four', displayName: 'Image Grid', description: 'A 2x2 grid of four images.', icon: 'grid_on' },
+    { name: 'image_with_caption_below', displayName: 'Image w/ Caption', description: 'A large image with a dedicated caption area below.', icon: 'image' },
+    { name: 'text_over_image', displayName: 'Text Over Image', description: 'A block of text centered over a background image.', icon: 'fullscreen' },
+    { name: 'quote_with_image', displayName: 'Quote & Portrait', description: 'A quote next to an image of the author.', icon: 'person_pin' },
+    { name: 'feature_highlight_image', displayName: 'Feature Highlight', description: 'An image with numbered callouts pointing to features.', icon: 'pin_drop' },
+    { name: 'image_collage', displayName: 'Image Collage', description: 'A creative collage of 3-5 images.', icon: 'photo_library' },
+    { name: 'image_focus_left', displayName: 'Image Focus Left', description: 'A large image on the left (2/3) with text on the right.', icon: 'align_horizontal_right' },
+    { name: 'image_focus_right', displayName: 'Image Focus Right', description: 'A large image on the right (2/3) with text on the left.', icon: 'align_horizontal_left' },
+    { name: 'checklist', displayName: 'Checklist', description: 'A list of items with checkmark boxes.', icon: 'checklist' },
+    { name: 'numbered_list_large', displayName: 'Numbered List', description: 'A list where large, stylized numbers are prominent.', icon: 'format_list_numbered' },
+    { name: 'step_flow_vertical', displayName: 'Vertical Flow', description: 'A vertical flow of steps or stages.', icon: 'more_vert' },
+    { name: 'circular_flow', displayName: 'Circular Flow', description: 'Items arranged in a circle showing a repeating process.', icon: 'donut_large' },
+    { name: 'staggered_list', displayName: 'Staggered List', description: 'Items appear staggered left and right down the page.', icon: 'format_line_spacing' },
+    { name: 'feature_list_icons', displayName: 'Feature List', description: 'A list of features, each accompanied by an icon.', icon: 'list' },
+    { name: 'pros_and_cons', displayName: 'Pros & Cons', description: 'A two-column layout for comparing advantages and disadvantages.', icon: 'thumbs_up_down' },
+    { name: 'kpi_dashboard_three', displayName: 'KPI Dashboard (3)', description: 'Showcase three key performance indicators.', icon: 'speed' },
+    { name: 'kpi_dashboard_four', displayName: 'KPI Dashboard (4)', description: 'Showcase four key performance indicators.', icon: 'grid_4x4' },
+    { name: 'target_vs_actual', displayName: 'Target vs. Actual', description: 'A gauge or bar showing progress towards a goal.', icon: 'moving' },
+    { name: 'faq', displayName: 'FAQ', description: 'A question and answer format.', icon: 'quiz' },
+    { name: 'call_to_action', displayName: 'Call to Action', description: 'A slide with a large, clear call to action.', icon: 'ads_click' },
+    { name: 'world_map_pins', displayName: 'Map Pins', description: 'A world map background with pins for locations.', icon: 'public' },
   ];
 
   currentSlide = computed(() => {
@@ -158,6 +200,51 @@ export class PresentationEditorComponent {
             this.lastSeenPresentationId.set(undefined);
         }
     }, { allowSignalWrites: true });
+  }
+  // FIX: Added private `diff` method to implement text comparison for prompts.
+  private diff(oldStr: string, newStr: string): { text: string; type: 'added' | 'removed' | 'same' }[] {
+    const oldLines = oldStr.split('\n');
+    const newLines = newStr.split('\n');
+    const diffResult: { text: string; type: 'added' | 'removed' | 'same' }[] = [];
+
+    const dp = Array(oldLines.length + 1).fill(null).map(() => Array(newLines.length + 1).fill(0));
+
+    for (let i = oldLines.length - 1; i >= 0; i--) {
+        for (let j = newLines.length - 1; j >= 0; j--) {
+            if (oldLines[i] === newLines[j]) {
+                dp[i][j] = 1 + dp[i + 1][j + 1];
+            } else {
+                dp[i][j] = Math.max(dp[i + 1][j], dp[i][j + 1]);
+            }
+        }
+    }
+
+    let i = 0, j = 0;
+    while (i < oldLines.length && j < newLines.length) {
+        if (oldLines[i] === newLines[j]) {
+            diffResult.push({ text: oldLines[i], type: 'same' });
+            i++;
+            j++;
+        } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+            diffResult.push({ text: oldLines[i], type: 'removed' });
+            i++;
+        } else {
+            diffResult.push({ text: newLines[j], type: 'added' });
+            j++;
+        }
+    }
+
+    while (i < oldLines.length) {
+        diffResult.push({ text: oldLines[i], type: 'removed' });
+        i++;
+    }
+
+    while (j < newLines.length) {
+        diffResult.push({ text: newLines[j], type: 'added' });
+        j++;
+    }
+
+    return diffResult;
   }
 
   startPresentation(): void {
@@ -334,54 +421,26 @@ export class PresentationEditorComponent {
   }
 
   handleDragOver(event: DragEvent, index: number): void {
-    event.preventDefault(); // Necessary to allow dropping
-    if (this.draggedSlideIndex() !== index) {
+    event.preventDefault();
+    if (index !== this.dropTargetIndex()) {
       this.dropTargetIndex.set(index);
     }
   }
-  
+
   handleDragLeave(): void {
     this.dropTargetIndex.set(null);
   }
-  
-  handleDrop(dropIndex: number): void {
+
+  handleDrop(targetIndex: number): void {
     const pres = this.presentation();
     const draggedIndex = this.draggedSlideIndex();
-
-    if (pres && draggedIndex !== null && draggedIndex !== dropIndex) {
-      const currentIndex = this.currentSlideIndex();
-      const currentSlideObject = pres.slides[currentIndex];
-      
+    if (pres && draggedIndex !== null && draggedIndex !== targetIndex) {
       const newSlides = [...pres.slides];
       const [draggedItem] = newSlides.splice(draggedIndex, 1);
-      newSlides.splice(dropIndex, 0, draggedItem);
-      
-      const newPresentation = { ...pres, slides: newSlides };
-      const newCurrentIndex = newSlides.indexOf(currentSlideObject);
-
-      if (newCurrentIndex !== -1 && newCurrentIndex !== currentIndex) {
-        // Animate to new position of the currently selected slide
-        this.transitioningSlide.set({ slide: currentSlideObject, animation: 'animate-fade-out' });
-        this.animationClass.set('animate-fade-in');
-
-        this.commitChange(newPresentation);
-        this.currentSlideIndex.set(newCurrentIndex);
-        
-        setTimeout(() => {
-          this.transitioningSlide.set(null);
-          this.animationClass.set('');
-        }, 500);
-      } else {
-        // No animation needed if index doesn't change, or slide not found
-        this.commitChange(newPresentation);
-        if (newCurrentIndex !== -1) {
-            this.currentSlideIndex.set(newCurrentIndex);
-        }
-      }
+      newSlides.splice(targetIndex, 0, draggedItem);
+      this.commitChange({ ...pres, slides: newSlides });
     }
-    
-    this.draggedSlideIndex.set(null);
-    this.dropTargetIndex.set(null);
+    this.handleDragEnd();
   }
 
   handleDragEnd(): void {
@@ -389,195 +448,203 @@ export class PresentationEditorComponent {
     this.dropTargetIndex.set(null);
   }
 
-  // --- AI Features ---
-  async generateNotesForCurrentSlide() {
-    const slide = this.currentSlide();
+  async smartReorder(): Promise<void> {
     const pres = this.presentation();
-    if (!slide || !pres) return;
-    const notes = await this.geminiService.generateSpeakerNotes(slide.title, slide.content, pres.language);
-    if (notes) {
-      const newSlide = { ...slide, speakerNotes: notes };
+    if (!pres) return;
+    const reorderedSlides = await this.geminiService.reorderSlides(pres);
+    if (reorderedSlides) {
+      this.commitChange({ ...pres, slides: reorderedSlides });
+    }
+  }
+  
+  async regenerateCurrentSlide(): Promise<void> {
+    const pres = this.presentation();
+    const slide = this.currentSlide();
+    if (!pres || !slide) return;
+
+    const newSlide = await this.geminiService.regenerateSlide(slide, pres);
+    if (newSlide) {
       const newSlides = [...pres.slides];
       newSlides[this.currentSlideIndex()] = newSlide;
       this.commitChange({ ...pres, slides: newSlides });
     }
   }
 
-  improveTitle() {
+  async suggestLayoutForCurrentSlide(): Promise<void> {
     const slide = this.currentSlide();
     if (!slide) return;
-    this.openContentImprover({ field: 'title' });
+    const suggestedLayout = await this.geminiService.suggestLayout(slide);
+    if (suggestedLayout) {
+      this.changeLayout(suggestedLayout);
+    }
   }
 
-  improveAllBulletPoints() {
+  async improveTitle(): Promise<void> {
+    const pres = this.presentation();
     const slide = this.currentSlide();
-    if (!slide || !slide.content || (Array.isArray(slide.content) && slide.content.length === 0)) return;
+    if (!pres || !slide) return;
+
+    const improvedTitle = await this.geminiService.improveContent(slide.title, 'improve', pres.language);
+    if (improvedTitle) {
+      const newSlide = { ...slide, title: improvedTitle };
+      this.handleSlideChange(newSlide);
+    }
+  }
+  
+  improveAllBulletPoints(): void {
+    const slide = this.currentSlide();
+    if (!slide || !Array.isArray(slide.content) || !slide.content.length) return;
     this.bulkImprovementTarget.set('bulletPoints');
     this.isBulkImproverOpen.set(true);
   }
 
-  improveAllSpeakerNotes() {
-    const slide = this.currentSlide();
-    if (!slide || !slide.speakerNotes || (Array.isArray(slide.speakerNotes) && slide.speakerNotes.length === 0)) return;
-    this.bulkImprovementTarget.set('speakerNotes');
-    this.isBulkImproverOpen.set(true);
+  async generateThemeWithAi(): Promise<void> {
+    if (!this.aiThemePrompt()) return;
+    const newTheme = await this.geminiService.generateTheme(this.aiThemePrompt());
+    if (newTheme) {
+      this.updateTheme(null, newTheme);
+      this.themeGenerated.emit(newTheme);
+      this.aiThemePrompt.set('');
+    }
   }
 
-  openContentImprover(info: { field: 'title' | 'content' | 'speakerNotes', index?: number }) {
+  updateTheme(property: keyof Theme | null, value: string | Theme): void {
+    const pres = this.presentation();
+    if (!pres) return;
+
+    let newTheme: Theme;
+    if (property === null && typeof value !== 'string') {
+      newTheme = value as Theme;
+    } else if (property) {
+      newTheme = { ...pres.theme, [property]: value as string };
+    } else {
+      return;
+    }
+
+    const newPresentation = { ...pres, theme: newTheme };
+    this.commitChange(newPresentation, true);
+  }
+
+  async runAddSlideAi(): Promise<void> {
+    const pres = this.presentation();
+    if (!this.newSlideTopic() || !pres) return;
+
+    const newSlide = await this.geminiService.generateSingleSlide(this.newSlideTopic(), pres);
+    if (newSlide) {
+      const newSlides = [...pres.slides, newSlide];
+      const newPresentation = { ...pres, slides: newSlides };
+      this.commitChange(newPresentation);
+      this.isAddSlideAiOpen.set(false);
+      this.newSlideTopic.set('');
+      this.navigateToSlide(newSlides.length - 1);
+    }
+  }
+  
+  handleAgentUpdate(updatedPresentation: Presentation): void {
+    this.commitChange(updatedPresentation);
+  }
+
+  openContentImprover(info: { field: 'title' | 'content' | 'speakerNotes', index?: number }): void {
     const slide = this.currentSlide();
     if (!slide) return;
-    let text = '';
-    if (info.field === 'title') text = slide.title;
-    else if (info.field === 'content' && info.index !== undefined && Array.isArray(slide.content)) text = slide.content[info.index];
-    else if (info.field === 'speakerNotes' && info.index !== undefined && Array.isArray(slide.speakerNotes)) text = (slide.speakerNotes || [])[info.index];
+
+    let textToImprove: string | undefined = '';
+
+    if (info.field === 'title') {
+      textToImprove = slide.title;
+    } else if (info.field === 'content' && info.index !== undefined) {
+      if (Array.isArray(slide.content)) {
+        textToImprove = slide.content[info.index];
+      } else if (typeof slide.content === 'string' && info.index === 0) {
+        textToImprove = slide.content;
+      }
+    } else if (info.field === 'speakerNotes' && info.index !== undefined) {
+      const notes = this.normalizedSpeakerNotes();
+      textToImprove = notes[info.index];
+    }
     
-    if (text) {
-      this.contentToImproveInfo.set({ ...info, text });
+    if (textToImprove) {
+      this.contentToImproveInfo.set({ field: info.field, index: info.index, text: textToImprove });
       this.isContentImproverOpen.set(true);
     }
   }
 
-  async runImproveContent(mode: 'improve' | 'shorten' | 'lengthen') {
+  async runImproveContent(mode: 'improve' | 'shorten' | 'lengthen'): Promise<void> {
     const info = this.contentToImproveInfo();
-    const slide = this.currentSlide();
     const pres = this.presentation();
-    if (!info || !slide || !pres) return;
+    if (!info || !pres) return;
+
+    this.isContentImproverOpen.set(false); // Close modal
+
+    const slide = this.currentSlide();
+    if (!slide) return;
 
     const improvedText = await this.geminiService.improveContent(info.text, mode, pres.language);
-    if (improvedText) {
-      const newSlide = { ...slide };
-      if (info.field === 'title') {
-        newSlide.title = improvedText;
-      } else if (info.field === 'content' && info.index !== undefined && Array.isArray(newSlide.content)) {
-        const newContent = [...newSlide.content];
-        newContent[info.index] = improvedText;
-        newSlide.content = newContent;
-      } else if (info.field === 'speakerNotes' && info.index !== undefined) {
-        const newNotes = Array.isArray(newSlide.speakerNotes) ? [...newSlide.speakerNotes] : [newSlide.speakerNotes || ''];
-        newNotes[info.index] = improvedText;
-        newSlide.speakerNotes = newNotes;
-      }
-      const newSlides = [...pres.slides];
-      newSlides[this.currentSlideIndex()] = newSlide;
-      this.commitChange({ ...pres, slides: newSlides });
+    if (!improvedText) {
+      this.contentToImproveInfo.set(null); // Clear info on failure
+      return;
     }
-    this.isContentImproverOpen.set(false);
-    this.contentToImproveInfo.set(null);
-  }
 
-  async runBulkImprovement(mode: 'improve' | 'shorten' | 'lengthen') {
-    const target = this.bulkImprovementTarget();
-    const slide = this.currentSlide();
-    const pres = this.presentation();
-    if (!target || !slide || !pres) return;
-
-    let newSlide = { ...slide };
-    if (target === 'bulletPoints' && Array.isArray(slide.content) && slide.content?.length) {
-      const improvedContent = await this.geminiService.improveBulletPoints(slide.title, slide.content, mode, pres.language);
-      if (improvedContent) newSlide = { ...newSlide, content: improvedContent };
-    } else if (target === 'speakerNotes' && Array.isArray(slide.speakerNotes) && slide.speakerNotes?.length) {
-      const improvedNotes = await this.geminiService.improveSpeakerNotes(slide.title, slide.speakerNotes, mode, pres.language);
-      if (improvedNotes) newSlide = { ...newSlide, speakerNotes: improvedNotes };
+    let newSlide: Slide = { ...slide };
+    if (info.field === 'title') {
+      newSlide.title = improvedText;
+    } else if (info.field === 'content' && info.index !== undefined) {
+      const newContent = [...(Array.isArray(slide.content) ? slide.content : [slide.content])];
+      newContent[info.index] = improvedText;
+      newSlide.content = newContent;
+    } else if (info.field === 'speakerNotes' && info.index !== undefined) {
+      const notes = this.normalizedSpeakerNotes();
+      const newNotes = [...notes];
+      newNotes[info.index] = improvedText;
+      newSlide.speakerNotes = newNotes;
     }
     
     const newSlides = [...pres.slides];
     newSlides[this.currentSlideIndex()] = newSlide;
     this.commitChange({ ...pres, slides: newSlides });
     
+    this.contentToImproveInfo.set(null); // Clear info
+  }
+
+  async runBulkImprovement(mode: 'improve' | 'shorten' | 'lengthen'): Promise<void> {
+    const target = this.bulkImprovementTarget();
+    const pres = this.presentation();
+    const slide = this.currentSlide();
+    if (!target || !pres || !slide) return;
+
     this.isBulkImproverOpen.set(false);
+
+    let improvedResult: string[] | null = null;
+
+    if (target === 'bulletPoints' && Array.isArray(slide.content)) {
+      improvedResult = await this.geminiService.improveBulletPoints(slide.title, slide.content, mode, pres.language);
+    } else if (target === 'speakerNotes') {
+      const notes = this.normalizedSpeakerNotes();
+      if(notes.length > 0) {
+        improvedResult = await this.geminiService.improveSpeakerNotes(slide.title, notes, mode, pres.language);
+      }
+    }
+    
+    if (improvedResult) {
+      const newSlide = { ...slide, [target === 'bulletPoints' ? 'content' : 'speakerNotes']: improvedResult };
+      this.handleSlideChange(newSlide);
+    }
+    
     this.bulkImprovementTarget.set(null);
-  }
-
-  async smartReorder() {
-    const pres = this.presentation();
-    if (!pres) return;
-    const reorderedSlides = await this.geminiService.reorderSlides(pres);
-    if (reorderedSlides) {
-      const currentIndex = this.currentSlideIndex();
-      const outgoingSlide = pres.slides[currentIndex];
-      const newPresentation = { ...pres, slides: reorderedSlides };
-      const newIndex = 0;
-
-      // After reorder, we animate from the previously selected slide to the new first slide.
-      if (newIndex !== currentIndex) {
-        this.transitioningSlide.set({ slide: outgoingSlide, animation: 'animate-fade-out' });
-        this.animationClass.set('animate-fade-in');
-
-        this.commitChange(newPresentation);
-        this.currentSlideIndex.set(newIndex);
-        
-        setTimeout(() => {
-          this.transitioningSlide.set(null);
-          this.animationClass.set('');
-        }, 500);
-      } else { // current index was already 0
-        this.commitChange(newPresentation);
-        this.currentSlideIndex.set(newIndex);
-      }
-    }
-  }
-
-  async runAddSlideAi() {
-    const pres = this.presentation();
-    if (!pres || !this.newSlideTopic()) return;
-    const newSlide = await this.geminiService.generateSingleSlide(this.newSlideTopic(), pres);
-    if (newSlide) {
-      const newSlides = [...pres.slides, newSlide];
-      this.commitChange({ ...pres, slides: newSlides });
-      this.navigateToSlide(newSlides.length - 1);
-    }
-    this.isAddSlideAiOpen.set(false);
-    this.newSlideTopic.set('');
-  }
-
-  handleAgentUpdate(newPresentation: Presentation) {
-    const oldPresentation = this.presentation();
-    if (!oldPresentation) {
-      this.commitChange(newPresentation);
-      return;
-    }
-
-    // Handle slide deletion logic
-    if (newPresentation.slides.length < oldPresentation.slides.length) {
-      const oldIndex = this.currentSlideIndex();
-      // If the currently selected slide was deleted, adjust the index.
-      if (oldIndex >= newPresentation.slides.length) {
-        this.currentSlideIndex.set(Math.max(0, newPresentation.slides.length - 1));
-      }
-    }
-
-    this.commitChange(newPresentation);
-  }
-
-  // --- NEW AI FEATURE HANDLERS ---
-  async handleImproveImagePrompt(): Promise<void> {
-    const pres = this.presentation();
-    const slideIndex = this.currentSlideIndex();
-    const slide = pres?.slides[slideIndex];
-    if (!slide || !slide.imagePrompt || !pres) return;
-
-    const improvedPrompt = await this.geminiService.improveImagePrompt(slide.title, slide.content, slide.imagePrompt);
-
-    if (improvedPrompt) {
-        const currentPres = this.presentation();
-        if (!currentPres) return;
-        const finalSlides = [...currentPres.slides];
-        const oldSlide = finalSlides[slideIndex];
-        const updatedSlide: Slide = { ...oldSlide, imagePrompt: improvedPrompt };
-        finalSlides[slideIndex] = updatedSlide;
-        this.commitChange({ ...currentPres, slides: finalSlides });
-    }
   }
 
   openImageEditModal(): void {
     const slide = this.currentSlide();
-    if (!slide) return;
+    const pres = this.presentation();
+    if (!slide || !pres) return;
+
     this.imageToEditInfo.set({
       slideIndex: this.currentSlideIndex(),
       currentPrompt: slide.imagePrompt,
-      style: 'Photorealistic', // Default or fetch from slide state if available
-      aspectRatio: '16:9'
+      style: 'Photorealistic', // Default
+      aspectRatio: '16:9'      // Default
     });
+    this.imageEditInstruction.set('');
     this.isImageEditModalOpen.set(true);
   }
 
@@ -586,489 +653,443 @@ export class PresentationEditorComponent {
     const instruction = this.imageEditInstruction();
     if (!info || !instruction) return;
 
-    const newPrompt = await this.geminiService.getEditedImagePrompt(info.currentPrompt, instruction);
-    if (newPrompt) {
-        const imageUrl = await this.geminiService.generateImageFromPrompt(newPrompt, info.style, info.aspectRatio);
-        if (imageUrl) {
-            const pres = this.presentation();
-            if (!pres) return;
-            const newSlides = [...pres.slides];
-            const oldSlide = newSlides[info.slideIndex];
-            newSlides[info.slideIndex] = { ...oldSlide, imageUrl, imagePrompt: newPrompt };
-            this.commitChange({ ...pres, slides: newSlides });
-        }
-    }
-    // Close modal and reset state
+    const pres = this.presentation();
+    if (!pres) return;
+
+    // Set generating state
+    const newSlidesWithSpinner = [...pres.slides];
+    newSlidesWithSpinner[info.slideIndex] = { ...newSlidesWithSpinner[info.slideIndex], isGeneratingImage: true };
+    this.presentationChange.emit({ ...pres, slides: newSlidesWithSpinner });
+    
     this.isImageEditModalOpen.set(false);
     this.imageEditInstruction.set('');
-    this.imageToEditInfo.set(null);
+  
+    const newPrompt = await this.geminiService.getEditedImagePrompt(info.currentPrompt, instruction);
+    const promptToUse = newPrompt || `${info.currentPrompt}, ${instruction}`;
+  
+    const imageUrl = await this.geminiService.generateImageFromPrompt(promptToUse, info.style, info.aspectRatio);
+  
+    // Update final presentation state
+    const finalPres = this.presentation();
+    if (!finalPres) return;
+    const finalSlides = [...finalPres.slides];
+    const oldSlide = finalSlides[info.slideIndex];
+    let updatedSlide: Slide;
+    if (imageUrl) {
+      updatedSlide = { ...oldSlide, imageUrl, imagePrompt: promptToUse, isGeneratingImage: false };
+    } else {
+      updatedSlide = { ...oldSlide, isGeneratingImage: false }; // Failed
+    }
+    finalSlides[info.slideIndex] = updatedSlide;
+    this.commitChange({ ...finalPres, slides: finalSlides });
   }
 
   async handleGenerateContentFromImage(): Promise<void> {
-    const slide = this.currentSlide();
     const pres = this.presentation();
-    if (!slide || !pres || !slide.imageUrl) return;
+    const slide = this.currentSlide();
+    if (!pres || !slide || !slide.imageUrl) return;
 
-    const generatedContent = await this.geminiService.generateSlideContentFromImage(slide.imageUrl);
-    if (generatedContent) {
-      const newSlide = { ...slide, title: generatedContent.title, content: generatedContent.content };
-      const newSlides = [...pres.slides];
-      newSlides[this.currentSlideIndex()] = newSlide;
-      this.commitChange({ ...pres, slides: newSlides });
+    const result = await this.geminiService.generateSlideContentFromImage(slide.imageUrl);
+    if (result) {
+      const newSlide = { ...slide, title: result.title, content: result.content };
+      this.handleSlideChange(newSlide);
     }
   }
 
-  async handleRegenerateSlide(): Promise<void> {
-    const slide = this.currentSlide();
+  async handleImproveImagePrompt(): Promise<void> {
     const pres = this.presentation();
-    if (!slide || !pres) return;
+    const slide = this.currentSlide();
+    if (!pres || !slide) return;
     
-    const newSlideData = await this.geminiService.regenerateSlide(slide, pres);
-    if (newSlideData) {
-        const newSlides = [...pres.slides];
-        newSlides[this.currentSlideIndex()] = { ...newSlideData, rating: null }; // Reset rating on regenerated slide
-        this.commitChange({ ...pres, slides: newSlides });
+    const improvedPrompt = await this.geminiService.improveImagePrompt(slide.title, slide.content, slide.imagePrompt);
+    if (improvedPrompt) {
+      const newSlide = { ...slide, imagePrompt: improvedPrompt };
+      this.handleSlideChange(newSlide);
     }
   }
 
-  async handleSmartLayout(): Promise<void> {
-      const slide = this.currentSlide();
-      const pres = this.presentation();
-      if (!slide || !pres) return;
-
-      const newLayout = await this.geminiService.suggestLayout(slide);
-      if (newLayout && newLayout !== slide.layout) {
-          this.changeLayout(newLayout);
-      } else if (newLayout) {
-          alert('AI confirms the current layout is already the most suitable for this content.');
-      }
-  }
-
-  // --- UI and Other ---
   updateSpeakerNote(event: Event, index: number): void {
-    const slide = this.currentSlide();
-    if (!slide) return;
-
     const target = event.target as HTMLElement;
+    const newText = target.textContent || '';
+    
+    const pres = this.presentation();
+    const slide = this.currentSlide();
+    if (!pres || !slide) return;
+    
     const notes = this.normalizedSpeakerNotes();
     const newNotes = [...notes];
-    newNotes[index] = target.innerText;
-
-    const newSlide = { ...slide, speakerNotes: newNotes };
-    const pres = this.presentation();
-    if (!pres) return;
+    newNotes[index] = newText;
+    
+    const newSlide: Slide = { ...slide, speakerNotes: newNotes };
     const newSlides = [...pres.slides];
     newSlides[this.currentSlideIndex()] = newSlide;
     this.commitChange({ ...pres, slides: newSlides }, true);
   }
 
-  updateTheme(prop: keyof Theme, value: string) {
+  async generateNotesForCurrentSlide(): Promise<void> {
     const pres = this.presentation();
-    if (pres) {
-      this.commitChange({ ...pres, theme: { ...pres.theme, [prop]: value }});
+    const slide = this.currentSlide();
+    if (!pres || !slide) return;
+
+    const newNotes = await this.geminiService.generateSpeakerNotes(slide.title, slide.content, pres.language);
+    if (newNotes) {
+      const newSlide = { ...slide, speakerNotes: newNotes };
+      this.handleSlideChange(newSlide);
     }
   }
 
-  async generateThemeWithAi() {
-    // Guard against empty prompts
-    const prompt = this.aiThemePrompt();
-    if (!prompt) return;
+  improveAllSpeakerNotes(): void {
+    const slide = this.currentSlide();
+    if (!slide || !this.normalizedSpeakerNotes().length) return;
+    this.bulkImprovementTarget.set('speakerNotes');
+    this.isBulkImproverOpen.set(true);
+  }
 
-    // Guard against no active presentation
+  rateSlide(slideIndex: number, ratingType: 'good' | 'bad', reasons?: string[]): void {
     const pres = this.presentation();
     if (!pres) return;
+    const newSlides = [...pres.slides];
+    const slideToUpdate = { ...newSlides[slideIndex] };
 
-    // Generate the new theme object using the Gemini service
-    const newTheme = await this.geminiService.generateTheme(prompt);
-    if (!newTheme) {
-      // The service handles showing an error toast, so we can just exit.
-      return;
+    if (ratingType === 'good') {
+      slideToUpdate.rating = slideToUpdate.rating?.type === 'good' ? null : { type: 'good' };
+    } else if (ratingType === 'bad' && reasons && reasons.length > 0) {
+       slideToUpdate.rating = slideToUpdate.rating?.type === 'bad' ? null : { type: 'bad', reasons };
+    } else {
+        slideToUpdate.rating = null;
     }
-
-    // Update the presentation's current theme with the newly generated one
-    this.commitChange({ ...pres, theme: newTheme });
-
-    // Emit the new theme so it can be added to the global list of theme presets
-    this.themeGenerated.emit(newTheme);
-
-    // Clear the input field for the next request
-    this.aiThemePrompt.set('');
+    
+    newSlides[slideIndex] = slideToUpdate;
+    this.commitChange({ ...pres, slides: newSlides });
+    this.badRatingInfo.set(null);
   }
   
-  // --- AI Evolution & Slide Rating ---
-
-  rateSlide(index: number, rating: 'good'): void {
-    const pres = this.presentation();
-    if (!pres) return;
-
-    const newSlides = [...pres.slides];
-    const slide = { ...newSlides[index] };
-
-    // Toggle rating: if same rating is clicked again, set to null
-    if (slide.rating?.type === rating) {
-      slide.rating = null;
-    } else {
-      slide.rating = { type: 'good' };
-    }
-
-    newSlides[index] = slide;
-    const newPresentation = { ...pres, slides: newSlides };
-    this.commitChange(newPresentation); // Use commit to allow undoing ratings
-    // If a 'bad' rating popover was open, clicking 'good' should close it.
-    if (this.badRatingInfo() !== null) {
-        this.badRatingInfo.set(null);
-    }
-  }
-
   openBadRatingPopover(slideIndex: number): void {
-    const pres = this.presentation();
-    if (!pres) return;
+    const currentInfo = this.badRatingInfo();
+    const slide = this.presentation()?.slides[slideIndex];
+    if (!slide) return;
 
-    // If popover for this slide is already open, close it.
-    if (this.badRatingInfo()?.slideIndex === slideIndex) {
-        this.badRatingInfo.set(null);
-        return;
+    if (currentInfo && currentInfo.slideIndex === slideIndex) {
+      this.badRatingInfo.set(null);
+    } else if (slide.rating?.type === 'bad') {
+       this.rateSlide(slideIndex, 'bad', []); // This will toggle it off
+    } else {
+      this.badRatingInfo.set({ slideIndex, reasons: {} });
     }
-    
-    // Close any other popover and open the new one
-    const slide = pres.slides[slideIndex];
-    const currentReasons = (slide.rating?.type === 'bad' && Array.isArray(slide.rating.reasons)) 
-        ? slide.rating.reasons 
-        : [];
-        
-    const reasonsObject: Record<string, boolean> = {};
-    this.ratingReasons.forEach(r => {
-        reasonsObject[r] = currentReasons.includes(r);
-    });
-    
-    this.badRatingInfo.set({ slideIndex, reasons: reasonsObject });
   }
 
   handleBadRatingSubmit(): void {
-      const info = this.badRatingInfo();
-      const pres = this.presentation();
-      if (!info || !pres) return;
-
-      const selectedReasons = Object.keys(info.reasons).filter(reason => info.reasons[reason]);
-
-      const newSlides = [...pres.slides];
-      const slide = { ...newSlides[info.slideIndex] };
-
-      // If no reasons are selected after submitting, treat it as un-rating.
-      if (selectedReasons.length === 0) {
-          // Only un-rate if it was previously 'bad'. No change if it was 'good' or null.
-          if (slide.rating?.type === 'bad') {
-            slide.rating = null;
-          }
-      } else {
-          slide.rating = { type: 'bad', reasons: selectedReasons };
-      }
-
-      newSlides[info.slideIndex] = slide;
-      this.commitChange({ ...pres, slides: newSlides });
-      this.badRatingInfo.set(null);
+    const info = this.badRatingInfo();
+    if (!info) return;
+    const selectedReasons = Object.keys(info.reasons).filter(reason => info.reasons[reason]);
+    this.rateSlide(info.slideIndex, 'bad', selectedReasons);
   }
 
   async openAiEvolutionModal(): Promise<void> {
-    const [prompt, history, activeId] = await Promise.all([
-      this.aiEvolutionService.getCorePrompt(),
-      this.aiEvolutionService.getPromptHistory(),
-      this.aiEvolutionService.getActivePromptId(),
-    ]);
-    this.aiCorePrompt.set(prompt);
-    this.promptHistory.set(history.slice().reverse()); // show newest first
-    this.activePromptId.set(activeId);
-    this.selectedPromptFromHistory.set(null);
-    this.newlyEvolvedPrompt.set(null);
-    this.generateFeedbackSummary();
     this.isAiEvolutionModalOpen.set(true);
+    this.newlyEvolvedPrompt.set(null);
+    this.selectedPromptFromHistory.set(null);
+    this.isEvolving.set(true);
+    try {
+      const [history, activeId, currentPrompt] = await Promise.all([
+        this.aiEvolutionService.getPromptHistory(),
+        this.aiEvolutionService.getActivePromptId(),
+        this.aiEvolutionService.getCorePrompt()
+      ]);
+      this.promptHistory.set(history.slice().reverse());
+      this.activePromptId.set(activeId);
+      this.aiCorePrompt.set(currentPrompt);
+      this.evolutionFeedbackSummary.set(this.getFeedbackSummary());
+    } catch (e) {
+      this.geminiService.error.set(`Failed to load AI evolution data: ${(e as Error).message}`);
+    } finally {
+      this.isEvolving.set(false);
+    }
   }
 
-  private generateFeedbackSummary(): void {
+  private getFeedbackSummary(): string {
     const pres = this.presentation();
-    if (!pres) {
-      this.evolutionFeedbackSummary.set('');
-      return;
-    }
-    
-    const goodSlides = pres.slides.filter(s => s.rating?.type === 'good');
-    const badSlides = pres.slides.filter(s => s.rating?.type === 'bad');
+    if (!pres) return 'No presentation loaded to analyze feedback.';
+    const goodSlides = pres.slides.map((s, i) => ({ ...s, index: i })).filter(s => s.rating?.type === 'good');
+    const badSlides = pres.slides.map((s, i) => ({ ...s, index: i })).filter(s => s.rating?.type === 'bad');
 
     if (goodSlides.length === 0 && badSlides.length === 0) {
-      this.evolutionFeedbackSummary.set('No feedback provided yet. Please rate some slides (👍/👎) to enable evolution.');
-      return;
+      return 'No feedback (good or bad) has been provided for this presentation yet.';
     }
-
-    let summary = `User provided feedback on a presentation about "${pres.originalTopic}".\n`;
-    summary += `Total slides rated: ${goodSlides.length + badSlides.length}/${pres.slides.length}.\n`;
-    summary += `Liked: ${goodSlides.length}. Disliked: ${badSlides.length}.\n\n`;
-    
-    if (badSlides.length > 0) {
-      summary += "The user DISLIKED the following slides, with these reasons:\n";
-      badSlides.forEach(s => {
-        const reasons = (s.rating?.type === 'bad' && s.rating.reasons.length > 0) ? s.rating.reasons.join(', ') : 'No specific reason given';
-        summary += `- Slide titled "${s.title}" (Layout: ${s.layout}): ${reasons}\n`;
-      });
-      summary += "\n";
-    }
-
+    let summary = 'User Feedback Analysis:\n\n';
     if (goodSlides.length > 0) {
-       summary += "The user LIKED the following slides:\n";
-        goodSlides.forEach(s => {
-          summary += `- Slide titled "${s.title}" (Layout: ${s.layout}).\n`;
-        });
+      summary += `Liked Slides (${goodSlides.length}):\n`;
+      goodSlides.forEach(s => { summary += `- Slide ${s.index + 1}: "${s.title}" (Layout: ${s.layout})\n`; });
+      summary += '\n';
     }
+    if (badSlides.length > 0) {
+      summary += `Disliked Slides (${badSlides.length}):\n`;
+      const reasonCounts: Record<string, number> = {};
+      badSlides.forEach(s => {
+        const reasons = (s.rating as { type: 'bad', reasons: string[] }).reasons;
+        summary += `- Slide ${s.index + 1}: "${s.title}" (Layout: ${s.layout}) - Reasons: ${reasons.join(', ')}\n`;
+        reasons.forEach(r => { reasonCounts[r] = (reasonCounts[r] || 0) + 1; });
+      });
+      summary += '\nCommon Issues:\n';
+      Object.entries(reasonCounts).sort((a, b) => b[1] - a[1]).forEach(([reason, count]) => {
+          summary += `- ${reason}: ${count} time(s)\n`;
+      });
+    }
+    return summary;
+  }
 
-    this.evolutionFeedbackSummary.set(summary.trim());
+  selectPromptFromHistory(item: PromptHistoryItem): void {
+    this.selectedPromptFromHistory.set(this.selectedPromptFromHistory()?.id === item.id ? null : item);
+  }
+
+  async makePromptActive(promptId: string): Promise<void> {
+    await this.aiEvolutionService.setActivePrompt(promptId);
+    this.activePromptId.set(promptId);
+    this.selectedPromptFromHistory.set(null);
+  }
+
+  async resetAiPrompt(): Promise<void> {
+    if (confirm('Are you sure you want to reset the AI instructions to the original default? This cannot be undone.')) {
+      await this.aiEvolutionService.resetToDefault();
+      this.openAiEvolutionModal(); // Refresh
+    }
   }
 
   async triggerAiEvolution(): Promise<void> {
-    const currentPrompt = this.aiCorePrompt();
-    const feedback = this.evolutionFeedbackSummary();
-    if (!feedback || feedback.startsWith('No feedback')) return;
-
     this.isEvolving.set(true);
-    const newPrompt = await this.geminiService.evolveCorePrompt(currentPrompt, feedback);
-    if (newPrompt) {
-      this.newlyEvolvedPrompt.set(newPrompt);
-    } else {
-      alert('The AI failed to evolve its prompt. Please try again.');
+    try {
+      const evolvedPrompt = await this.geminiService.evolveCorePrompt(this.aiCorePrompt(), this.evolutionFeedbackSummary());
+      if (evolvedPrompt) this.newlyEvolvedPrompt.set(evolvedPrompt);
+    } finally {
+      this.isEvolving.set(false);
     }
-    this.isEvolving.set(false);
   }
 
   async acceptEvolvedPrompt(): Promise<void> {
     const newPrompt = this.newlyEvolvedPrompt();
-    const feedback = this.evolutionFeedbackSummary();
     if (!newPrompt) return;
-    
-    const newItem = await this.aiEvolutionService.saveCorePrompt(newPrompt, feedback);
-    this.aiCorePrompt.set(newPrompt);
-    this.activePromptId.set(newItem.id);
-    this.newlyEvolvedPrompt.set(null);
-    this.selectedPromptFromHistory.set(null);
-    const history = await this.aiEvolutionService.getPromptHistory();
-    this.promptHistory.set(history.slice().reverse());
-    alert('AI Core Prompt has been evolved! A new version has been saved and is now active.');
+    await this.aiEvolutionService.saveCorePrompt(newPrompt, this.evolutionFeedbackSummary());
+    this.isAiEvolutionModalOpen.set(false);
   }
 
-  async makePromptActive(promptId: string | null): Promise<void> {
-    if (!promptId) return;
-    await this.aiEvolutionService.setActivePrompt(promptId);
-    this.activePromptId.set(promptId);
-    const newActivePrompt = await this.aiEvolutionService.getCorePrompt();
-    this.aiCorePrompt.set(newActivePrompt);
-    this.selectedPromptFromHistory.set(null); // Deselect any viewed prompt
-    alert('Selected prompt version is now active.');
-  }
-
-  async resetAiPrompt(): Promise<void> {
-    if (confirm('Are you sure you want to reset the AI instructions to their original default? This will clear all evolution history.')) {
-      await this.aiEvolutionService.resetToDefault();
-      const [prompt, history, activeId] = await Promise.all([
-        this.aiEvolutionService.getCorePrompt(),
-        this.aiEvolutionService.getPromptHistory(),
-        this.aiEvolutionService.getActivePromptId()
-      ]);
-      this.aiCorePrompt.set(prompt);
-      this.promptHistory.set(history.slice().reverse());
-      this.activePromptId.set(activeId);
-      this.selectedPromptFromHistory.set(null);
-      this.newlyEvolvedPrompt.set(null);
-      alert('AI Core Prompt has been reset to default.');
-    }
-  }
-
-  // --- Exporting ---
-  private waitForRender(): Promise<void> {
-    return new Promise(resolve => {
-        requestAnimationFrame(() => {
-            // A second frame is often needed to ensure layout and paint are complete
-            requestAnimationFrame(() => resolve());
-        });
-    });
-  }
-
-  async downloadAsPptx(): Promise<void> {
+  private async downloadAsPptx(): Promise<void> {
     const pres = this.presentation();
-    if (!pres) return;
+    if (!pres || typeof PptxGenJS === 'undefined') return;
+
+    this.isDownloadMenuOpen.set(false);
     this.downloadState.set('pptx');
-    this.isDownloadMenuOpen.set(false);
 
-    const pptx = new PptxGenJS();
-    pptx.layout = 'LAYOUT_16X9';
-    pptx.author = 'AI Presentation Generator';
-    pptx.title = pres.title;
-    
-    // Convert hex to RRGGBB for PptxGenJS
-    const cleanHex = (hex: string) => hex.replace('#', '');
+    try {
+        const pptx = new PptxGenJS();
+        pptx.layout = 'LAYOUT_16x9';
 
-    // Add a master slide for the theme background
-    pptx.defineSlideMaster({
-      title: 'MASTER_SLIDE',
-      background: { color: cleanHex(pres.theme.backgroundColor) },
-    });
+        const theme = pres.theme;
+        const pColor = theme.primaryColor.substring(1);
+        const tColor = theme.textColor.substring(1);
+        const bColor = theme.backgroundColor.substring(1);
 
-    for (const slide of pres.slides) {
-      const pptxSlide = pptx.addSlide({ masterName: 'MASTER_SLIDE' });
-      
-      // Title
-      pptxSlide.addText(slide.title, {
-        x: 0.5, y: 0.25, w: '90%', h: 0.75,
-        fontFace: pres.theme.titleFont,
-        fontSize: 32,
-        color: cleanHex(pres.theme.primaryColor),
-        bold: true,
-        align: 'center'
-      });
+        const getContentArray = (content: string | string[]): string[] => {
+            if (Array.isArray(content)) return content;
+            if (typeof content === 'string') return content.split('\n').filter(Boolean);
+            return [];
+        };
 
-      // Content
-      if (Array.isArray(slide.content)) {
-          pptxSlide.addText(slide.content.join('\n'), {
-            x: 0.5, y: 1.2, w: '90%', h: 3.8,
-            fontFace: pres.theme.bodyFont,
-            fontSize: 18,
-            color: cleanHex(pres.theme.textColor),
-            bullet: true,
-          });
-      } else if (typeof slide.content === 'string') {
-          pptxSlide.addText(slide.content, {
-            x: 0.5, y: 1.2, w: '90%', h: 3.8,
-            fontFace: pres.theme.bodyFont,
-            fontSize: 18,
-            color: cleanHex(pres.theme.textColor),
-          });
-      }
+        for (const slide of pres.slides) {
+            const pptxSlide = pptx.addSlide({ bkgd: bColor });
+            if (slide.speakerNotes) {
+                const notes = Array.isArray(slide.speakerNotes) ? slide.speakerNotes.join('\n\n') : slide.speakerNotes;
+                pptxSlide.addNotes(notes);
+            }
 
-      // Speaker Notes
-      if (slide.speakerNotes) {
-        const notes = Array.isArray(slide.speakerNotes) ? slide.speakerNotes.join('\n') : slide.speakerNotes;
-        pptxSlide.addNotes(notes);
-      }
+            const content = getContentArray(slide.content);
+            const titleOpts = { fontFace: theme.titleFont, color: pColor, bold: true };
+            const bodyOpts = { fontFace: theme.bodyFont, color: tColor };
+
+            switch (slide.layout) {
+                case 'title':
+                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 2.0, w: '90%', x: '5%', fontSize: 48 });
+                    if (content[0]) pptxSlide.addText(content[0], { ...bodyOpts, align: 'center', y: 3.5, w: '80%', x: '10%', fontSize: 24, color: tColor });
+                    break;
+                case 'section_header':
+                    pptxSlide.addShape(pptx.shapes.RECTANGLE, { x: 0, y: 2.5, w: '100%', h: 1.5, fill: { color: pColor, transparency: 85 } });
+                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 2.9, w: '90%', x: '5%', fontSize: 44 });
+                    break;
+                case 'conclusion':
+                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 2.5, w: '90%', x: '5%', fontSize: 48 });
+                    if (content[0]) pptxSlide.addText(content[0], { ...bodyOpts, align: 'center', y: 4.0, w: '80%', x: '10%', fontSize: 22 });
+                    break;
+                case 'content_left':
+                case 'image_focus_right':
+                    pptxSlide.addText(slide.title, { ...titleOpts, x: 0.5, y: 0.5, w: '50%', fontSize: 32 });
+                    pptxSlide.addText(content, { ...bodyOpts, x: 0.5, y: 1.5, w: '50%', h: 3.5, bullet: true, fontSize: slide.isSourceSlide ? 10 : 16 });
+                    if (slide.imageUrl) pptxSlide.addImage({ data: slide.imageUrl, x: 5.5, y: 1.0, w: 4.0, h: 3.5 });
+                    break;
+                case 'content_right':
+                case 'image_focus_left':
+                    pptxSlide.addText(slide.title, { ...titleOpts, x: 5.5, y: 0.5, w: '40%', fontSize: 32 });
+                    pptxSlide.addText(content, { ...bodyOpts, x: 5.5, y: 1.5, w: '40%', h: 3.5, bullet: true, fontSize: slide.isSourceSlide ? 10 : 16 });
+                    if (slide.imageUrl) pptxSlide.addImage({ data: slide.imageUrl, x: 0.5, y: 1.0, w: 4.5, h: 3.5 });
+                    break;
+                case 'image_full_bleed':
+                case 'text_over_image':
+                    if (slide.imageUrl) pptxSlide.addImage({ data: slide.imageUrl, x: 0, y: 0, w: '100%', h: '100%' });
+                    pptxSlide.addText(slide.title, { ...titleOpts, color: 'FFFFFF', align: 'center', y: 2.5, w: '90%', x: '5%', fontSize: 48, ...{ glow: { size: 10, color: '000000', opacity: 0.5 } } });
+                    if (content[0]) pptxSlide.addText(content[0], { ...bodyOpts, color: 'FFFFFF', align: 'center', y: 4.0, w: '80%', x: '10%', fontSize: 24, ...{ glow: { size: 8, color: '000000', opacity: 0.5 } } });
+                    break;
+                case 'two_column':
+                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 0.5, w: '90%', x: '5%', fontSize: 36 });
+                    const midpoint = Math.ceil(content.length / 2);
+                    pptxSlide.addText(content.slice(0, midpoint), { ...bodyOpts, x: 0.5, y: 1.5, w: '45%', h: 3.5, bullet: true, fontSize: slide.isSourceSlide ? 9 : 14 });
+                    pptxSlide.addText(content.slice(midpoint), { ...bodyOpts, x: 5.2, y: 1.5, w: '45%', h: 3.5, bullet: true, fontSize: slide.isSourceSlide ? 9 : 14 });
+                    break;
+                case 'three_column':
+                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 0.5, w: '90%', x: '5%', fontSize: 36 });
+                    const columns: { title: string, text: string }[] = [];
+                    for (let i = 0; i < content.length; i += 2) columns.push({ title: content[i], text: content[i+1] || '' });
+                    columns.slice(0, 3).forEach((col, i) => {
+                        pptxSlide.addText(col.title, { ...titleOpts, x: 0.5 + i * 3.2, y: 2, w: 3, h: 1, align: 'center', fontSize: 20 });
+                        pptxSlide.addText(col.text, { ...bodyOpts, x: 0.5 + i * 3.2, y: 3, w: 3, h: 2, align: 'center', fontSize: 14 });
+                    });
+                    break;
+                case 'table':
+                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 0.5, w: '90%', x: '5%', fontSize: 36 });
+                    if (slide.tableData) {
+                        const styledData = slide.tableData.map((row, i) => i === 0
+                            ? row.map(cell => ({ text: cell, options: { fill: pColor, color: bColor, bold: true } }))
+                            : row
+                        );
+                        pptxSlide.addTable(styledData, { x: 0.5, y: 1.5, w: 9.0, colW: Array(slide.tableData[0].length).fill(9.0 / slide.tableData[0].length), border: { type: 'solid', pt: 1, color: pColor }, ...bodyOpts });
+                    }
+                    break;
+                case 'chart_bar':
+                case 'chart_line':
+                case 'chart_pie':
+                case 'chart_doughnut':
+                case 'area_chart':
+                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 0.5, w: '90%', x: '5%', fontSize: 36 });
+                    if (slide.chartData) {
+                        const chartTypeMap: any = { 'chart_bar': 'bar', 'chart_line': 'line', 'chart_pie': 'pie', 'chart_doughnut': 'doughnut', 'area_chart': 'area' };
+                        const chartDataForPptx = slide.chartData.datasets.map(d => ({ name: d.label, labels: slide.chartData!.labels, values: d.data }));
+                        pptxSlide.addChart(chartTypeMap[slide.layout], chartDataForPptx, { x: 1, y: 1.5, w: 8, h: 3.5, showLegend: true, legendPos: 'b', chartColors: [pColor, tColor, '888888', 'F0A030', '40A0F0'] });
+                    }
+                    break;
+                case 'kpi_dashboard_three':
+                case 'stats_highlight':
+                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 0.5, w: '90%', x: '5%', fontSize: 36 });
+                    const kpiContent: { stat: string, label: string }[] = [];
+                    for (let i = 0; i < content.length; i += 2) kpiContent.push({ stat: content[i], label: content[i+1] || '' });
+                    kpiContent.slice(0, 3).forEach((item, i) => {
+                        const x = 0.5 + (i * 3.2);
+                        pptxSlide.addText(item.stat, { ...titleOpts, x, y: 2, w: 3, h: 2, align: 'center', valign: 'middle', fontSize: 48 });
+                        pptxSlide.addText(item.label, { ...bodyOpts, x, y: 3.5, w: 3, h: 1, align: 'center', fontSize: 18 });
+                    });
+                    break;
+                case 'timeline':
+                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 0.5, w: '90%', x: '5%', fontSize: 36 });
+                    pptxSlide.addShape(pptx.shapes.LINE, { x: 5.0, y: 1.5, w: 0, h: 3.5, line: { color: pColor, width: 2 } });
+                    const timelineItems: { item1: string, item2: string }[] = [];
+                    for (let i = 0; i < content.length; i+=2) timelineItems.push({ item1: content[i], item2: content[i+1] || ''});
+                    timelineItems.forEach((item, i) => {
+                        const yPos = 1.5 + i * (3.5 / timelineItems.length);
+                        pptxSlide.addShape(pptx.shapes.OVAL, { x: 4.85, y: yPos, w: 0.3, h: 0.3, fill: { color: pColor } });
+                        if (i % 2 === 0) { // Left side
+                            pptxSlide.addText(item.item1, { ...titleOpts, x: 0.5, y: yPos - 0.2, w: 4, h: 0.5, align: 'right', fontSize: 18 });
+                            pptxSlide.addText(item.item2, { ...bodyOpts, x: 0.5, y: yPos + 0.2, w: 4, h: 0.5, align: 'right', fontSize: 12 });
+                        } else { // Right side
+                            pptxSlide.addText(item.item1, { ...titleOpts, x: 5.5, y: yPos - 0.2, w: 4, h: 0.5, align: 'left', fontSize: 18 });
+                            pptxSlide.addText(item.item2, { ...bodyOpts, x: 5.5, y: yPos + 0.2, w: 4, h: 0.5, align: 'left', fontSize: 12 });
+                        }
+                    });
+                    break;
+                default: // Generic fallback
+                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 0.5, w: '90%', x: '5%', fontSize: 36 });
+                    if (slide.imageUrl) {
+                        pptxSlide.addText(content, { ...bodyOpts, x: 0.5, y: 1.5, w: '45%', h: 3.5, bullet: true, fontSize: 14 });
+                        pptxSlide.addImage({ data: slide.imageUrl, x: 5.2, y: 1.5, w: 4.3, h: 3.5 });
+                    } else {
+                        pptxSlide.addText(content, { ...bodyOpts, x: 0.5, y: 1.5, w: '90%', h: 3.5, bullet: true, fontSize: 14 });
+                    }
+                    break;
+            }
+        }
+        await pptx.writeFile({ fileName: `${pres.title}.pptx` });
+    } catch (e) {
+        this.geminiService.error.set(`Failed to generate PPTX: ${(e as Error).message}`);
+    } finally {
+        this.downloadState.set('idle');
     }
-
-    await pptx.writeFile({ fileName: `${pres.title}.pptx` });
-    this.downloadState.set('idle');
   }
 
-  async downloadAsPdf(): Promise<void> {
+  private async downloadAsPdf(): Promise<void> {
     const pres = this.presentation();
-    if (!pres) return;
+    if (!pres || typeof jspdf === 'undefined' || typeof html2canvas === 'undefined') return;
+    this.isDownloadMenuOpen.set(false);
     this.downloadState.set('pdf');
-    this.isDownloadMenuOpen.set(false);
-
-    // Temporarily set view to a single slide for rendering
-    const originalIndex = this.currentSlideIndex();
-    const pdf = new jspdf.jsPDF({
-      orientation: 'landscape',
-      unit: 'px',
-      format: [1920, 1080]
-    });
-
-    for (let i = 0; i < pres.slides.length; i++) {
-        this.currentSlideIndex.set(i);
-        await this.waitForRender(); // Wait for slide to render in the DOM
-        const slideElement = document.querySelector('.w-full.max-w-7xl.aspect-\\[16\\/9\\]');
-        if (slideElement) {
-            const canvas = await html2canvas(slideElement as HTMLElement, { scale: 2 });
-            if (i > 0) {
-                pdf.addPage([1920, 1080], 'landscape');
-            }
-            pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 1920, 1080);
-        }
-    }
-    
-    pdf.save(`${pres.title}.pdf`);
-    this.currentSlideIndex.set(originalIndex); // Restore original slide index
-    this.downloadState.set('idle');
+    try {
+      const { jsPDF } = jspdf;
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: 'a4' });
+      const slideHostEl = document.querySelector('app-presentation-editor .w-full.max-w-7xl.aspect-\\[16\\/9\\]');
+      if (!slideHostEl) throw new Error('Could not find slide element to capture.');
+      const originalIndex = this.currentSlideIndex();
+      for (let i = 0; i < pres.slides.length; i++) {
+        this.selectSlide(i);
+        await new Promise(res => setTimeout(res, 500));
+        const canvas = await html2canvas(slideHostEl as HTMLElement, { scale: 2, useCORS: true });
+        const imgData = canvas.toDataURL('image/jpeg', 0.8);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        if (i > 0) pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+      }
+      this.selectSlide(originalIndex);
+      pdf.save(`${pres.title}.pdf`);
+    } catch (e) { this.geminiService.error.set(`Failed to generate PDF: ${(e as Error).message}`); } finally { this.downloadState.set('idle'); }
   }
-  
-  async downloadAsPngZip(): Promise<void> {
+
+  private async downloadAsPngZip(): Promise<void> {
     const pres = this.presentation();
-    if (!pres) return;
+    if (!pres || typeof html2canvas === 'undefined' || typeof JSZip === 'undefined') return;
+    this.isDownloadMenuOpen.set(false);
     this.downloadState.set('png');
-    this.isDownloadMenuOpen.set(false);
-    const originalIndex = this.currentSlideIndex();
-    const zip = new JSZip();
-
-    for (let i = 0; i < pres.slides.length; i++) {
-        this.currentSlideIndex.set(i);
-        await this.waitForRender();
-        const slideElement = document.querySelector('.w-full.max-w-7xl.aspect-\\[16\\/9\\]');
-        if (slideElement) {
-            const canvas = await html2canvas(slideElement as HTMLElement, { scale: 2 });
-            const imgData = canvas.toDataURL('image/png').split('base64,')[1];
-            zip.file(`slide_${String(i + 1).padStart(2, '0')}.png`, imgData, { base64: true });
-        }
-    }
-
-    const content = await zip.generateAsync({ type: 'blob' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(content);
-    link.download = `${pres.title}_slides.zip`;
-    link.click();
-    URL.revokeObjectURL(link.href);
-
-    this.currentSlideIndex.set(originalIndex);
-    this.downloadState.set('idle');
+    try {
+      const zip = new JSZip();
+      const slideHostEl = document.querySelector('app-presentation-editor .w-full.max-w-7xl.aspect-\\[16\\/9\\]');
+      if (!slideHostEl) throw new Error('Could not find slide element to capture.');
+      const originalIndex = this.currentSlideIndex();
+      for (let i = 0; i < pres.slides.length; i++) {
+        this.selectSlide(i);
+        await new Promise(res => setTimeout(res, 500));
+        const canvas = await html2canvas(slideHostEl as HTMLElement, { useCORS: true });
+        zip.file(`slide_${String(i+1).padStart(2, '0')}.png`, canvas.toDataURL('image/png').split(',')[1], { base64: true });
+      }
+      this.selectSlide(originalIndex);
+      const content = await zip.generateAsync({ type: 'blob' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(content);
+      link.download = `${pres.title}_slides.zip`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    } catch (e) { this.geminiService.error.set(`Failed to generate PNGs: ${(e as Error).message}`); } finally { this.downloadState.set('idle'); }
   }
 
-  downloadAsTxt(): void {
+  private downloadAsTxt(): void {
     const pres = this.presentation();
     if (!pres) return;
-    this.downloadState.set('txt');
     this.isDownloadMenuOpen.set(false);
-
-    let textContent = `Presentation: ${pres.title}\n\n`;
-    pres.slides.forEach((slide, index) => {
-        textContent += `--- Slide ${index + 1}: ${slide.title} ---\n\n`;
-        if (Array.isArray(slide.content)) {
-            textContent += slide.content.map(p => `- ${p}`).join('\n');
-        } else {
-            textContent += slide.content;
-        }
-        textContent += '\n\n';
-        if (slide.speakerNotes && slide.speakerNotes.length > 0) {
-            textContent += 'Speaker Notes:\n';
-            if (Array.isArray(slide.speakerNotes)) {
-                textContent += slide.speakerNotes.map(n => `- ${n}`).join('\n');
-            } else {
-                textContent += slide.speakerNotes;
-            }
-            textContent += '\n\n';
-        }
-    });
-
-    const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `${pres.title}_notes.txt`;
-    link.click();
-    URL.revokeObjectURL(link.href);
-    
-    this.downloadState.set('idle');
-  }
-
-  private diff(oldText: string, newText: string): { line: string, type: 'added' | 'removed' }[] {
-    const oldLines = oldText.split('\n');
-    const newLines = newText.split('\n');
-    const oldSet = new Set(oldLines);
-    const newSet = new Set(newLines);
-
-    const diffResult: { line: string, type: 'added' | 'removed' }[] = [];
-
-    oldLines.forEach(line => {
-        if (!newSet.has(line)) {
-            diffResult.push({ line, type: 'removed' });
-        }
-    });
-
-    newLines.forEach(line => {
-        if (!oldSet.has(line)) {
-            diffResult.push({ line, type: 'added' });
-        }
-    });
-
-    return diffResult;
+    this.downloadState.set('txt');
+    try {
+      let content = `${pres.title}\n\n`;
+      pres.slides.forEach((slide, i) => {
+        content += `--- Slide ${i + 1}: ${slide.title} ---\n\n`;
+        if (Array.isArray(slide.content)) content += slide.content.map(p => `- ${p}`).join('\n') + '\n\n';
+        content += `Speaker Notes:\n${(Array.isArray(slide.speakerNotes) ? slide.speakerNotes.join('\n') : slide.speakerNotes || 'N/A')}\n\n`;
+      });
+      const blob = new Blob([content], { type: 'text/plain' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `${pres.title}_notes.txt`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    } catch (e) { this.geminiService.error.set(`Failed to generate TXT: ${(e as Error).message}`); } finally { this.downloadState.set('idle'); }
   }
 }
