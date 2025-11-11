@@ -29,7 +29,7 @@ You MUST adhere to the following plain text structure for your entire response.
 
 2.  For each of the {slideCount} slides, you MUST output a block of text starting with 'SLIDE_START' and ending with 'SLIDE_END'.
     - Each piece of information inside the block MUST be on a new line, starting with a specific key.
-    - The available keys are: 'LAYOUT', 'TITLE', 'CONTENT', 'IMAGE_PROMPT', 'NOTES', 'TABLE_DATA', 'CHART_DATA'.
+    - The available keys are: 'LAYOUT', 'TITLE', 'CONTENT', 'IMAGE_PROMPT', 'NOTES', 'TABLE_DATA', 'CHART_DATA', 'ANIMATION'.
     - You can have multiple 'CONTENT' and 'NOTES' lines for bullet points.
 
 **Example of a Data Slide block:**
@@ -40,6 +40,7 @@ TITLE: Annual User Growth
 CONTENT: The platform has seen a significant increase in user adoption over the past year.
 IMAGE_PROMPT: A subtle, elegant, abstract background with soft gradients of blue and grey, minimalist design, professional and clean. No text, no words, no letters.
 CHART_DATA: {"labels":["Q1","Q2","Q3", "Q4"],"datasets":[{"label":"Active Users","data":[1500,2800,4500,6200]}]}
+ANIMATION: flyIn
 NOTES: As you can see, our growth trajectory has been phenomenal. We started the year strong, but the marketing campaign in Q2 really spurred our initial growth. \`(Pause for emphasis)\`
 NOTES: This was followed by a major feature release in Q3 that led to this incredible accelerated adoption. We're on a rocket ship here.
 SLIDE_END
@@ -57,6 +58,15 @@ SLIDE_END
     -   **Be an Art Director:** The prompt must be for a high-end, photorealistic AI image generator. Think about metaphorical concepts. Specify lighting (e.g., 'dramatic rim lighting', 'soft morning light'), camera angle (e.g., 'low-angle shot', 'macro detail shot'), and composition (e.g., 'rule of thirds', 'leading lines'). The prompt must be a rich, descriptive paragraph.
     -   The prompt MUST end with: "No text, no words, no letters."
     -   For layouts without a main image ('two_column', 'section_header', etc.), generate a subtle, abstract background image prompt that is still thematically related to the slide's content.
+
+-   **Motion Design for 'ANIMATION':**
+    -   As a motion designer, choose an appropriate animation for the slide's content and mood for a PowerPoint export.
+    -   'fadeIn': Subtle and professional. Good for formal, serious content.
+    -   'flyIn': Dynamic and energetic. Good for introductions and impactful statements.
+    -   'wipe': A clean reveal. Good for showing steps or process flows.
+    -   'zoomIn': Draws focus. Good for highlighting a key image or data point.
+    -   'none': For static slides where animation would be a distraction.
+    -   The value for the 'ANIMATION' key MUST be one of: 'none', 'fadeIn', 'flyIn', 'wipe', 'zoomIn'.
 
 -   **CRITICAL: Design Council Decision on Layouts**
     Your most important task as a designer is choosing a layout that PERFECTLY fits the content you've written. Do not just pick layouts randomly. You MUST analyze the length and nature of your content for a slide BEFORE selecting a layout.
@@ -89,6 +99,7 @@ SLIDE_END
     -   When you choose a data-driven layout, you MUST also provide the corresponding 'TABLE_DATA' or 'CHART_DATA' key.
     -   'TABLE_DATA': The value MUST be a single-line, valid JSON 2D array of strings. The first inner array is the header.
     -   'CHART_DATA': The value MUST be a single-line, valid JSON object with 'labels' (string array) and 'datasets' (array of objects with 'label' string and 'data' number array).
+    -   **'bridge_chart' Specifics:** To create a waterfall/bridge effect, the 'data' array for this chart type must include negative numbers for decreases and positive numbers for increases.
     -   **CRITICAL DATA GENERATION RULES:**
         1.  **NO EMPTY DATA:** The 'data' array inside a 'CHART_DATA' object MUST NOT be empty.
         2.  **MATCHING LENGTHS:** The number of items in the 'data' array MUST exactly match the number of items in the 'labels' array.

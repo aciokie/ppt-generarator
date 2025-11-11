@@ -1,6 +1,8 @@
 
 
 
+
+
 import { Component, ChangeDetectionStrategy, signal, inject, effect, computed, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -535,12 +537,28 @@ Generate the complete JSON object now.`;
   private async generateImageForSlide(slideIndex: number): Promise<void> {
     const currentPresentation = this.presentation();
     if (!currentPresentation) return;
-  
+
     const slide = currentPresentation.slides[slideIndex];
-    if (!slide || !slide.imagePrompt || slide.layout === 'section_header' || slide.layout === 'title' || slide.layout === 'conclusion' || slide.layout === 'quote') {
-      return; // Don't generate images for certain layout types
+
+    const layoutsWithImages: SlideLayout[] = [
+      'content_left',
+      'content_right',
+      'image_full_bleed',
+      'image_overlap_left',
+      'image_focus_left',
+      'image_focus_right',
+      'image_with_caption_below',
+      'text_over_image',
+      'quote_with_image',
+      'feature_highlight_image',
+      'image_collage',
+      'image_grid_four',
+    ];
+
+    if (!slide || !slide.imagePrompt || !layoutsWithImages.includes(slide.layout)) {
+      return; // Don't generate images for layouts that don't display them
     }
-  
+
     // Set generating state for the specific slide
     this.presentation.update(p => {
       if (!p) return null;
@@ -548,10 +566,10 @@ Generate the complete JSON object now.`;
       newSlides[slideIndex] = { ...newSlides[slideIndex], isGeneratingImage: true };
       return { ...p, slides: newSlides };
     });
-  
+
     // Call Gemini API to generate image; the service now handles queueing and throttling.
     const imageUrl = await this.geminiService.generateImageFromPrompt(slide.imagePrompt, 'Cinematic Photo', '16:9');
-  
+
     // Update the slide with the new image URL
     this.presentation.update(p => {
       if (!p) return null;

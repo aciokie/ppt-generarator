@@ -901,6 +901,28 @@ export class PresentationEditorComponent {
                 pptxSlide.addNotes(notes);
             }
 
+            if (slide.animation && slide.animation !== 'none') {
+                let transition: { type: string, advClick: boolean, dur: number, opts?: any } = { type: 'fade', advClick: true, dur: 1 };
+                switch (slide.animation) {
+                    case 'fadeIn':
+                        transition.type = 'fade';
+                        break;
+                    case 'flyIn':
+                        transition.type = 'push';
+                        transition.opts = { dir: 'd' }; // 'd' is for down
+                        break;
+                    case 'wipe':
+                        transition.type = 'wipe';
+                        transition.opts = { dir: 'r' }; // 'r' for right
+                        break;
+                    case 'zoomIn':
+                        transition.type = 'zoom';
+                        transition.opts = { dir: 'in' };
+                        break;
+                }
+                pptxSlide.transition = transition;
+            }
+
             const content = getContentArray(slide.content);
             const titleOpts = { fontFace: theme.titleFont, color: pColor, bold: true };
             const bodyOpts = { fontFace: theme.bodyFont, color: tColor };
@@ -961,47 +983,108 @@ export class PresentationEditorComponent {
                         pptxSlide.addTable(styledData, { x: 0.5, y: 1.5, w: 9.0, colW: Array(slide.tableData[0].length).fill(9.0 / slide.tableData[0].length), border: { type: 'solid', pt: 1, color: pColor }, ...bodyOpts });
                     }
                     break;
-                case 'chart_bar':
-                case 'chart_line':
-                case 'chart_pie':
-                case 'chart_doughnut':
-                case 'area_chart':
+                case 'chart_bar': case 'chart_line': case 'chart_pie': case 'chart_doughnut': case 'area_chart': case 'scatter_plot': case 'bubble_chart': case 'bridge_chart':
                     pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 0.5, w: '90%', x: '5%', fontSize: 36 });
                     if (slide.chartData) {
-                        const chartTypeMap: any = { 'chart_bar': 'bar', 'chart_line': 'line', 'chart_pie': 'pie', 'chart_doughnut': 'doughnut', 'area_chart': 'area' };
+                        const chartTypeMap: any = { 'chart_bar': 'bar', 'chart_line': 'line', 'chart_pie': 'pie', 'chart_doughnut': 'doughnut', 'area_chart': 'area', 'scatter_plot': 'scatter', 'bubble_chart': 'bubble', 'bridge_chart': 'bar' };
                         const chartDataForPptx = slide.chartData.datasets.map(d => ({ name: d.label, labels: slide.chartData!.labels, values: d.data }));
-                        pptxSlide.addChart(chartTypeMap[slide.layout], chartDataForPptx, { x: 1, y: 1.5, w: 8, h: 3.5, showLegend: true, legendPos: 'b', chartColors: [pColor, tColor, '888888', 'F0A030', '40A0F0'] });
+                        const chartOpts: any = { x: 1, y: 1.5, w: 8, h: 3.5, showLegend: true, legendPos: 'b', chartColors: [pColor, tColor.slice(0, 6), '888888', 'F0A030', '40A0F0'] };
+                        if (slide.layout === 'bridge_chart') {
+                            chartOpts.barDir = 'col';
+                            chartOpts.catAxisLabelRotate = 45;
+                        }
+                        pptxSlide.addChart(chartTypeMap[slide.layout], chartDataForPptx, chartOpts);
                     }
                     break;
-                case 'kpi_dashboard_three':
-                case 'stats_highlight':
-                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 0.5, w: '90%', x: '5%', fontSize: 36 });
-                    const kpiContent: { stat: string, label: string }[] = [];
-                    for (let i = 0; i < content.length; i += 2) kpiContent.push({ stat: content[i], label: content[i+1] || '' });
-                    kpiContent.slice(0, 3).forEach((item, i) => {
-                        const x = 0.5 + (i * 3.2);
-                        pptxSlide.addText(item.stat, { ...titleOpts, x, y: 2, w: 3, h: 2, align: 'center', valign: 'middle', fontSize: 48 });
-                        pptxSlide.addText(item.label, { ...bodyOpts, x, y: 3.5, w: 3, h: 1, align: 'center', fontSize: 18 });
-                    });
+                case 'quote':
+                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 0.5, w: '90%', x: '5%', fontSize: 24 });
+                    pptxSlide.addText('“', { x: 1, y: 1.5, w: 1, h: 1, fontSize: 96, color: pColor, bold: false, transparency: 80 });
+                    if (content[0]) pptxSlide.addText(content[0], { ...bodyOpts, align: 'center', x: '15%', y: 2.5, w: '70%', h: 1.5, fontSize: 32, italic: true });
+                    if (content[1]) pptxSlide.addText(`— ${content[1]}`, { ...bodyOpts, align: 'right', x: '15%', y: 4.0, w: '70%', h: 0.5, fontSize: 20 });
                     break;
-                case 'timeline':
+                case 'process':
+                case 'step_flow':
                     pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 0.5, w: '90%', x: '5%', fontSize: 36 });
-                    pptxSlide.addShape(pptx.shapes.LINE, { x: 5.0, y: 1.5, w: 0, h: 3.5, line: { color: pColor, width: 2 } });
-                    const timelineItems: { item1: string, item2: string }[] = [];
-                    for (let i = 0; i < content.length; i+=2) timelineItems.push({ item1: content[i], item2: content[i+1] || ''});
-                    timelineItems.forEach((item, i) => {
-                        const yPos = 1.5 + i * (3.5 / timelineItems.length);
-                        pptxSlide.addShape(pptx.shapes.OVAL, { x: 4.85, y: yPos, w: 0.3, h: 0.3, fill: { color: pColor } });
-                        if (i % 2 === 0) { // Left side
-                            pptxSlide.addText(item.item1, { ...titleOpts, x: 0.5, y: yPos - 0.2, w: 4, h: 0.5, align: 'right', fontSize: 18 });
-                            pptxSlide.addText(item.item2, { ...bodyOpts, x: 0.5, y: yPos + 0.2, w: 4, h: 0.5, align: 'right', fontSize: 12 });
-                        } else { // Right side
-                            pptxSlide.addText(item.item1, { ...titleOpts, x: 5.5, y: yPos - 0.2, w: 4, h: 0.5, align: 'left', fontSize: 18 });
-                            pptxSlide.addText(item.item2, { ...bodyOpts, x: 5.5, y: yPos + 0.2, w: 4, h: 0.5, align: 'left', fontSize: 12 });
+                    const processItems: { item1: string, item2: string }[] = [];
+                    for (let i = 0; i < content.length; i+=2) processItems.push({ item1: content[i], item2: content[i+1] || ''});
+                    const stepCount = Math.min(processItems.length, 5);
+                    const stepW = 1.6; const arrowW = 0.5; const totalW = stepCount * stepW + (stepCount - 1) * arrowW;
+                    let startX = (10 - totalW) / 2;
+                    processItems.slice(0, stepCount).forEach((item, i) => {
+                        pptxSlide.addShape(pptx.shapes.RECTANGLE, { x: startX, y: 2.0, w: stepW, h: 2.5, fill: { color: pColor, transparency: (i * 15) } });
+                        pptxSlide.addText(item.item1, { shape: pptx.shapes.RECTANGLE, x: startX, y: 2.0, w: stepW, h: 1.0, align: 'center', bold: true, color: bColor, fontSize: 16 });
+                        pptxSlide.addText(item.item2, { shape: pptx.shapes.RECTANGLE, x: startX, y: 3.0, w: stepW, h: 1.5, align: 'center', color: bColor, fontSize: 12 });
+                        startX += stepW;
+                        if (i < stepCount - 1) {
+                            pptxSlide.addShape(pptx.shapes.RIGHT_ARROW, { x: startX, y: 2.75, w: arrowW, h: 1.0, fill: { color: tColor } });
+                            startX += arrowW;
                         }
                     });
                     break;
-                default: // Generic fallback
+                case 'pyramid':
+                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 0.5, w: '90%', x: '5%', fontSize: 36 });
+                    const pyramidLevels = content.length;
+                    const pyramidH = 0.6; let pyramidY = 4.8 - pyramidH;
+                    for (let i = 0; i < pyramidLevels; i++) {
+                        const level = pyramidLevels - 1 - i;
+                        const width = 2.0 + level * 1.0; const x = (10 - width) / 2;
+                        pptxSlide.addShape(pptx.shapes.TRAPEZOID, { x, y: pyramidY, w: width, h: pyramidH, fill: { color: pColor, transparency: (i * 15) }, line: { color: bColor, width: 1 } });
+                        pptxSlide.addText(content[level], { x, y: pyramidY, w: width, h: pyramidH, align: 'center', valign: 'middle', color: bColor, bold: true });
+                        pyramidY -= pyramidH;
+                    }
+                    break;
+                case 'org_chart':
+                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 0.5, w: '90%', x: '5%', fontSize: 36 });
+                    const levels: string[][] = []; let currentLevel: string[] = [];
+                    content.forEach(item => { if (item === '---') { levels.push(currentLevel); currentLevel = []; } else { currentLevel.push(item); } });
+                    levels.push(currentLevel);
+                    const boxW = 2.0, boxH = 0.8, vGap = 0.6, hGap = 0.5;
+                    const rootX = (10 - boxW) / 2, rootY = 1.5;
+                    if (levels[0] && levels[0].length >= 2) {
+                        pptxSlide.addShape(pptx.shapes.RECTANGLE, { x: rootX, y: rootY, w: boxW, h: boxH, fill: { color: pColor } });
+                        pptxSlide.addText(`${levels[0][0]}\n${levels[0][1]}`, { x: rootX, y: rootY, w: boxW, h: boxH, align: 'center', valign: 'middle', color: bColor, fontSize: 10 });
+                    }
+                    if (levels[1]) {
+                        const l2Pairs = []; for (let i = 0; i < levels[1].length; i += 2) { l2Pairs.push({ name: levels[1][i], title: levels[1][i+1] || '' }); }
+                        const l2Count = l2Pairs.length; const totalW_l2 = l2Count * boxW + (l2Count - 1) * hGap;
+                        let startX_l2 = (10 - totalW_l2) / 2; const l2Y = rootY + boxH + vGap;
+                        pptxSlide.addShape(pptx.shapes.LINE, { x: rootX + boxW / 2, y: rootY + boxH, w: 0, h: vGap / 2, line: { color: pColor, width: 2 } });
+                        if (l2Count > 1) { pptxSlide.addShape(pptx.shapes.LINE, { x: startX_l2 + boxW / 2, y: rootY + boxH + vGap / 2, w: totalW_l2 - boxW, h: 0, line: { color: pColor, width: 2 } }); }
+                        l2Pairs.forEach((pair, i) => {
+                            const x = startX_l2 + i * (boxW + hGap);
+                            pptxSlide.addShape(pptx.shapes.LINE, { x: x + boxW / 2, y: rootY + boxH + vGap/2, w: 0, h: vGap/2, line: { color: pColor, width: 2 } });
+                            pptxSlide.addShape(pptx.shapes.RECTANGLE, { x, y: l2Y, w: boxW, h: boxH, fill: { color: tColor, transparency: 85 } });
+                            pptxSlide.addText(`${pair.name}\n${pair.title}`, { x, y: l2Y, w: boxW, h: boxH, align: 'center', valign: 'middle', color: tColor, fontSize: 10 });
+                        });
+                    }
+                    break;
+                case 'venn_diagram':
+                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 0.5, w: '90%', x: '5%', fontSize: 36 });
+                    const venn = { itemA: { title: content[0] || '', text: content[1] || '' }, itemB: { title: content[2] || '', text: content[3] || '' }, intersection: { title: content[4] || '', text: content[5] || '' } };
+                    pptxSlide.addShape(pptx.shapes.OVAL, { x: 2.5, y: 2.0, w: 3.5, h: 3.5, fill: { color: pColor, transparency: 70 } });
+                    pptxSlide.addShape(pptx.shapes.OVAL, { x: 4.0, y: 2.0, w: 3.5, h: 3.5, fill: { color: tColor, transparency: 70 } });
+                    pptxSlide.addText(venn.itemA.title, { x: 2, y: 2.5, w: 2, h: 0.5, align: 'center', bold: true, fontSize: 16, color: tColor });
+                    pptxSlide.addText(venn.itemA.text, { x: 2, y: 3.0, w: 2, h: 1, align: 'center', fontSize: 12, color: tColor });
+                    pptxSlide.addText(venn.itemB.title, { x: 6, y: 2.5, w: 2, h: 0.5, align: 'center', bold: true, fontSize: 16, color: tColor });
+                    pptxSlide.addText(venn.itemB.text, { x: 6, y: 3.0, w: 2, h: 1, align: 'center', fontSize: 12, color: tColor });
+                    pptxSlide.addText(venn.intersection.title, { x: 4, y: 2.8, w: 2, h: 0.5, align: 'center', bold: true, fontSize: 16, color: tColor });
+                    pptxSlide.addText(venn.intersection.text, { x: 4, y: 3.3, w: 2, h: 1, align: 'center', fontSize: 12, color: tColor });
+                    break;
+                case 'hub_and_spoke': case 'radial_diagram': case 'mind_map':
+                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 0.5, w: '90%', x: '5%', fontSize: 36 });
+                    const hub = content[0] || 'Center'; const spokes = content.slice(1);
+                    const centerX = 5.0, centerY = 3.0, radius = 2.0, hubSize = 1.5;
+                    pptxSlide.addShape(pptx.shapes.OVAL, { x: centerX - hubSize/2, y: centerY - hubSize/2, w: hubSize, h: hubSize, fill: { color: pColor } });
+                    pptxSlide.addText(hub, { x: centerX - hubSize/2, y: centerY - hubSize/2, w: hubSize, h: hubSize, align: 'center', valign: 'middle', color: bColor, bold: true, fontSize: 14 });
+                    spokes.slice(0, 8).forEach((spoke, i) => {
+                        const angle = (i / spokes.length) * 2 * Math.PI;
+                        const spokeX = centerX + radius * Math.cos(angle); const spokeY = centerY + radius * Math.sin(angle);
+                        pptxSlide.addShape(pptx.shapes.LINE, { x: centerX, y: centerY, w: spokeX - centerX, h: spokeY - centerY, line: { color: pColor, width: 1 } });
+                        pptxSlide.addShape(pptx.shapes.OVAL, { x: spokeX - 0.5, y: spokeY - 0.5, w: 1.2, h: 1.2, fill: { color: tColor, transparency: 85 } });
+                        pptxSlide.addText(spoke, { x: spokeX - 0.5, y: spokeY - 0.5, w: 1.2, h: 1.2, align: 'center', valign: 'middle', fontSize: 10, color: tColor });
+                    });
+                    break;
+                default: // Generic fallback for layouts not yet implemented
                     pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 0.5, w: '90%', x: '5%', fontSize: 36 });
                     if (slide.imageUrl) {
                         pptxSlide.addText(content, { ...bodyOpts, x: 0.5, y: 1.5, w: '45%', h: 3.5, bullet: true, fontSize: 14 });

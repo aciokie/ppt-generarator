@@ -22,6 +22,17 @@ export class SlideComponent {
   improveImagePrompt = output<void>();
   improveContent = output<{field: 'title' | 'content' | 'speakerNotes' | 'column_title' | 'column_text' | 'item1' | 'item2', index?: number}>();
 
+  protected readonly normalizedLayout = computed(() => {
+    const layout = this.slide().layout;
+    // Handle common AI model inconsistencies in layout naming
+    switch (layout) {
+      case 'imagefocusright' as any: return 'image_focus_right';
+      case 'imagefocusleft' as any: return 'image_focus_left';
+      case 'imageoverlapleft' as any: return 'image_overlap_left';
+      default: return layout;
+    }
+  });
+
   imageStyle = signal('Photorealistic');
   readonly imageStyles = [
     'Photorealistic', 

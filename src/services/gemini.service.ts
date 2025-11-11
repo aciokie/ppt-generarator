@@ -1,6 +1,6 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
-import { Presentation, Slide, SlideLayout, Theme, Source, ChartData } from '../types';
+import { Presentation, Slide, SlideLayout, Theme, Source, ChartData, PptxAnimation } from '../types';
 import { THEME_PRESETS } from '../themes/presets';
 import { AiEvolutionService } from './ai-evolution.service';
 
@@ -63,6 +63,7 @@ export class GeminiService {
         'world_map_pins'
       ] },
       speakerNotes: { type: Type.ARRAY, items: { type: Type.STRING } },
+      animation: { type: Type.STRING, enum: ['none', 'fadeIn', 'flyIn', 'wipe', 'zoomIn'], description: "Animation style for the slide in PowerPoint." },
       tableData: {
           type: Type.ARRAY,
           items: { type: Type.ARRAY, items: { type: Type.STRING } },
@@ -201,6 +202,8 @@ export class GeminiService {
             currentSlide.imagePrompt = this.stripMarkdown(line.substring('IMAGE_PROMPT:'.length).trim());
           } else if (line.startsWith('NOTES:')) {
             currentSlide.notesList?.push(this.stripMarkdown(line.substring('NOTES:'.length).trim()));
+          } else if (line.startsWith('ANIMATION:')) {
+            currentSlide.animation = this.stripMarkdown(line.substring('ANIMATION:'.length).trim()) as PptxAnimation;
           } else if (line.startsWith('TABLE_DATA:')) {
             try {
               const jsonString = line.substring('TABLE_DATA:'.length).trim();
@@ -248,6 +251,7 @@ export class GeminiService {
                 speakerNotes: currentSlide.notesList || [],
                 tableData: currentSlide.tableData,
                 chartData: currentSlide.chartData,
+                animation: currentSlide.animation,
                 rating: null
               };
               const event: PresentationStreamEvent = { type: 'slide', index: slideIndex, data: finalSlide };
@@ -366,6 +370,8 @@ ${documentText}
             currentSlide.imagePrompt = this.stripMarkdown(line.substring('IMAGE_PROMPT:'.length).trim());
           } else if (line.startsWith('NOTES:')) {
             currentSlide.notesList?.push(this.stripMarkdown(line.substring('NOTES:'.length).trim()));
+          } else if (line.startsWith('ANIMATION:')) {
+            currentSlide.animation = this.stripMarkdown(line.substring('ANIMATION:'.length).trim()) as PptxAnimation;
           } else if (line.startsWith('TABLE_DATA:')) {
             try {
               const jsonString = line.substring('TABLE_DATA:'.length).trim();
@@ -411,6 +417,7 @@ ${documentText}
                 speakerNotes: currentSlide.notesList || [],
                 tableData: currentSlide.tableData,
                 chartData: currentSlide.chartData,
+                animation: currentSlide.animation,
                 rating: null
               };
               const event: PresentationStreamEvent = { type: 'slide', index: slideIndex, data: finalSlide };
@@ -503,7 +510,7 @@ ${documentText}
       while (attempt < maxRetries) {
         try {
           const response = await this.ai.models.generateImages({
-            model: 'imagen-3.0-generate-002',
+            model: 'imagen-4.0-generate-001',
             prompt: `Create a visually stunning, high-quality image for a presentation slide. Style: ${imageStyle}, professional. Prompt: ${prompt}. IMPORTANT: The image must not contain any words, text, or letters.`,
             config: {
               numberOfImages: 1,

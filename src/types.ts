@@ -21,6 +21,7 @@ export type SlideLayout =
   'kpi_dashboard_three' | 'kpi_dashboard_four' | 'target_vs_actual' | 'faq' | 'call_to_action' |
   'world_map_pins';
 
+export type PptxAnimation = 'none' | 'fadeIn' | 'flyIn' | 'wipe' | 'zoomIn';
 
 export interface ChartData {
   labels: string[];
@@ -44,6 +45,7 @@ export interface Slide {
   tableData?: string[][];
   chartData?: ChartData;
   rating?: { type: 'good' } | { type: 'bad', reasons: string[] } | null;
+  animation?: PptxAnimation;
 }
 
 export interface Theme {
