@@ -1,8 +1,3 @@
-
-
-
-
-
 import { Component, ChangeDetectionStrategy, signal, inject, effect, computed, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -15,9 +10,15 @@ import { LiveGenerationComponent } from './components/live-generation/live-gener
 import { DocumentProcessorService } from './services/document-processor.service';
 import { ErrorToastComponent } from './components/error-toast/error-toast.component';
 import { BackendService } from './services/backend.service';
+import { ErrorLoggingService } from './services/error-logging.service';
 
 type AppView = 'landing' | 'theme' | 'generating' | 'editor';
 type GenerationMode = 'standard' | 'external_ai' | 'document';
+
+interface LoggedError {
+  message: string;
+  timestamp: string;
+}
 
 @Component({
   selector: 'app-root',
@@ -31,6 +32,7 @@ export class AppComponent {
   backendService = inject(BackendService);
   userPreferenceService = inject(UserPreferenceService);
   documentProcessorService = inject(DocumentProcessorService);
+  errorLoggingService = inject(ErrorLoggingService);
 
   // App State
   view = signal<AppView>('landing');
@@ -46,7 +48,7 @@ export class AppComponent {
   slideCount = signal(10);
   audience = signal('');
   language = signal<'English' | 'Tagalog'>('English');
-  useGoogleSearch = signal(false);
+  useGoogleSearch = signal(true);
   highQuality = signal(false);
   uploadedFile = signal<File | null>(null);
   jsonInput = signal('');
@@ -57,13 +59,16 @@ export class AppComponent {
 
   // Processing State
   isProcessingFile = signal(false);
-  private imageGenerationQueue: number[] = [];
-  private isProcessingImageQueue = signal(false);
 
   // Theme Filtering State
   selectedThemeCategory = signal<string>('All');
   aiSuggestedThemes = signal<Theme[] | null>(null);
   isSuggestingThemes = signal(false);
+
+  // Error Log State
+  isErrorLogModalOpen = signal(false);
+  errorLogs = signal<LoggedError[]>([]);
+
   themeCategories = computed(() => {
     const allThemes = this.themes();
     return ['All', ...Array.from(new Set(allThemes.map(t => t.category))).sort()];
@@ -121,7 +126,10 @@ export class AppComponent {
 
 1.  **Theme Generation:**
     -   You MUST create a "theme" object within the main JSON structure.
-    -   This theme should be visually appealing and appropriate for the presentation's topic.
+    -   **STRICT INTENT-BASED PALETTE RULES:**
+        -   **Aggressive/Offensive:** Use Deep Crimson (#450a0a) background and Orange (#fb923c) primary/text.
+        -   **Defensive/Safe:** Use Navy (#0f172a) background and Teal (#2dd4bf) primary/text.
+        -   **Educational/Technical:** Use White (#ffffff) background and Slate Blue (#334155) primary/text.
     -   The theme object MUST have the following keys:
         -   **name**: A creative name for the theme (e.g., "Cybernetic Blue").
         -   **category**: A general category (e.g., "Tech", "Corporate", "Creative").
@@ -241,20 +249,46 @@ Generate the complete JSON object now.`;
   liveGenerationComponent = viewChild(LiveGenerationComponent);
 
   constructor() {
-    this.backendService.getHistory().then(history => this.history.set(history));
+    this.backendService.getHistory()
+      .then(history => this.history.set(history))
+      .catch(err => {
+        console.error('Failed to load presentation history on startup.', err);
+        this.geminiService.error.set({ message: `Failed to load presentation history: ${(err as Error).message}`, reportable: true });
+      });
 
     effect((onCleanup) => {
       const currentPres = this.presentation();
       if (currentPres) {
         const timer = setTimeout(() => {
-          this.backendService.savePresentation(currentPres).then(() => {
-            // After saving, refresh the history list
-            this.backendService.getHistory().then(h => this.history.set(h));
-          });
+          this.backendService.savePresentation(currentPres)
+            .then(() => {
+              // After saving, refresh the history list
+              this.backendService.getHistory()
+                .then(h => this.history.set(h))
+                .catch(err => {
+                    console.error('Failed to refresh history after saving.', err);
+                    // This is a non-critical error, so we might not want to show a toast.
+                    // A console error is sufficient here.
+                });
+            })
+            .catch(err => {
+              console.error('Autosave failed:', err);
+              this.geminiService.error.set({ message: `Autosave failed: ${(err as Error).message}`, reportable: true });
+            });
         }, 1000);
         onCleanup(() => clearTimeout(timer));
       }
     });
+  }
+
+  openErrorLogModal(): void {
+    this.errorLogs.set(this.errorLoggingService.getLogs().slice().reverse());
+    this.isErrorLogModalOpen.set(true);
+  }
+
+  clearErrorLogs(): void {
+    this.errorLoggingService.clearLogs();
+    this.errorLogs.set([]);
   }
 
   private cleanJsonString(jsonString: string): string {
@@ -340,7 +374,7 @@ Generate the complete JSON object now.`;
         this.showAiChoiceModal.set(false);
       } catch (error) {
         console.error('Error processing file for external AI:', error);
-        this.geminiService.error.set((error as Error).message);
+        this.geminiService.error.set({ message: (error as Error).message, reportable: true });
         this.showAiChoiceModal.set(false);
         this.clearFile();
       } finally {
@@ -426,7 +460,7 @@ Generate the complete JSON object now.`;
 
     } catch (error) {
         console.error("Failed during presentation generation:", error);
-        this.geminiService.error.set((error as Error).message);
+        this.geminiService.error.set({ message: (error as Error).message, reportable: true });
         this.view.set('landing');
     } finally {
         this.isProcessingFile.set(false);
@@ -492,16 +526,12 @@ Generate the complete JSON object now.`;
 
     } catch (error) {
         console.error("Failed during JSON parsing/generation:", error);
-        this.geminiService.error.set(`Failed to create presentation from JSON: ${(error as Error).message}`);
+        this.geminiService.error.set({ message: `Failed to create presentation from JSON: ${(error as Error).message}`, reportable: true });
         this.view.set('landing');
     }
   }
   
   private async beginStreamingGeneration(stream: AsyncGenerator<PresentationStreamEvent, void, unknown>, originalTopic: string, theme: Theme): Promise<void> {
-    // Clear the image generation queue for this new presentation
-    this.imageGenerationQueue = [];
-    this.isProcessingImageQueue.set(false);
-
     const pres: Presentation = {
       id: crypto.randomUUID(),
       title: 'Generating...',
@@ -513,73 +543,6 @@ Generate the complete JSON object now.`;
     };
     this.presentation.set(pres);
     await this.processGenerationStream(stream, pres);
-  }
-
-  private async processImageQueue(): Promise<void> {
-    if (this.isProcessingImageQueue() || this.imageGenerationQueue.length === 0) {
-      return; // Already processing or the queue is empty
-    }
-  
-    this.isProcessingImageQueue.set(true);
-  
-    const slideIndex = this.imageGenerationQueue.shift(); // Get the next item
-  
-    if (slideIndex !== undefined) {
-      this.generateImageForSlide(slideIndex);
-    }
-  
-    this.isProcessingImageQueue.set(false);
-    // After starting one, immediately check if there's more in the queue.
-    // The service will handle the actual throttling.
-    this.processImageQueue();
-  }
-
-  private async generateImageForSlide(slideIndex: number): Promise<void> {
-    const currentPresentation = this.presentation();
-    if (!currentPresentation) return;
-
-    const slide = currentPresentation.slides[slideIndex];
-
-    const layoutsWithImages: SlideLayout[] = [
-      'content_left',
-      'content_right',
-      'image_full_bleed',
-      'image_overlap_left',
-      'image_focus_left',
-      'image_focus_right',
-      'image_with_caption_below',
-      'text_over_image',
-      'quote_with_image',
-      'feature_highlight_image',
-      'image_collage',
-      'image_grid_four',
-    ];
-
-    if (!slide || !slide.imagePrompt || !layoutsWithImages.includes(slide.layout)) {
-      return; // Don't generate images for layouts that don't display them
-    }
-
-    // Set generating state for the specific slide
-    this.presentation.update(p => {
-      if (!p) return null;
-      const newSlides = [...p.slides];
-      newSlides[slideIndex] = { ...newSlides[slideIndex], isGeneratingImage: true };
-      return { ...p, slides: newSlides };
-    });
-
-    // Call Gemini API to generate image; the service now handles queueing and throttling.
-    const imageUrl = await this.geminiService.generateImageFromPrompt(slide.imagePrompt, 'Cinematic Photo', '16:9');
-
-    // Update the slide with the new image URL
-    this.presentation.update(p => {
-      if (!p) return null;
-      const newSlides = [...p.slides];
-      // Ensure the slide hasn't been changed by another process
-      if (newSlides[slideIndex]) {
-        newSlides[slideIndex] = { ...newSlides[slideIndex], imageUrl: imageUrl || undefined, isGeneratingImage: false };
-      }
-      return { ...p, slides: newSlides };
-    });
   }
 
   private async processGenerationStream(stream: AsyncGenerator<PresentationStreamEvent, void, unknown>, initialPresentation: Presentation) {
@@ -605,9 +568,6 @@ Generate the complete JSON object now.`;
           if (liveGen) {
             await liveGen.writeSlide(event.index, event.data);
           }
-          // Add slide to the image generation queue and kick off the processor.
-          this.imageGenerationQueue.push(event.index);
-          this.processImageQueue();
         } else if (event.type === 'sources') {
           finalSources = event.sources;
         }

@@ -1,9 +1,4 @@
 
-
-
-
-
-
 export type SlideLayout = 
   // Original Layouts
   'title' | 'content_left' | 'content_right' | 'section_header' | 'conclusion' | 'two_column' | 
@@ -19,7 +14,24 @@ export type SlideLayout =
   'image_collage' | 'image_focus_left' | 'image_focus_right' | 'checklist' | 'numbered_list_large' |
   'step_flow_vertical' | 'circular_flow' | 'staggered_list' | 'feature_list_icons' | 'pros_and_cons' |
   'kpi_dashboard_three' | 'kpi_dashboard_four' | 'target_vs_actual' | 'faq' | 'call_to_action' |
-  'world_map_pins';
+  'world_map_pins' |
+
+  // -- NEW ADVANCED LAYOUTS (41) --
+
+  // Data & Chart
+  'chart_radar' | 'chart_heatmap' | 'chart_waterfall' | 'data_table_highlight' | 'gauge_chart_three' | 'progress_bar_list' |
+
+  // Infographic & Process
+  'roadmap_horizontal' | 'roadmap_vertical' | 'matrix_3x3' | 'gear_diagram' | 'arrow_process_flow' | 'diverging_arrows' | 'converging_arrows' | 'chevron_list' | 'project_dashboard' |
+
+  // Image Centric
+  'image_grid_three' | 'image_grid_five' | 'image_carousel_mockup' | 'image_with_side_bullets' | 'image_before_after' | 'device_mockup_phone' | 'device_mockup_laptop' | 'image_header_text_below' | 'cover_page_logo' |
+
+  // Text & Content
+  'agenda' | 'speaker_introduction' | 'testimonial_single' | 'testimonial_three' | 'definition_list' | 'icon_grid_four' | 'key_takeaways' | 'numbered_highlights_four' | 'bento_grid' | 'diagonal_flow' | 'split_33_66' | 'impact' |
+
+  // Unique & Miscellaneous (Aliases are included for robustness)
+  'contact_information' | 'thank_you' | 'next_steps' | 'word_cloud' | 'statement' | 'company_timeline' | 'chapter_divider' | 'matrix_2x2' | 'image_with_hotspots';
 
 export type PptxAnimation = 'none' | 'fadeIn' | 'flyIn' | 'wipe' | 'zoomIn';
 
@@ -46,6 +58,11 @@ export interface Slide {
   chartData?: ChartData;
   rating?: { type: 'good' } | { type: 'bad', reasons: string[] } | null;
   animation?: PptxAnimation;
+  // New video properties
+  videoUrl?: string;
+  isGeneratingVideo?: boolean;
+  videoGenerationProgress?: string;
+  hasVideo?: boolean; // For persistence
 }
 
 export interface Theme {

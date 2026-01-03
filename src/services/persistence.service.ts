@@ -7,6 +7,7 @@ export class PersistenceService {
   private readonly PRESENTATION_PREFIX = 'ai_presentation_';
   private readonly DB_NAME = 'ai_presentation_db';
   private readonly IMAGE_STORE_NAME = 'images';
+  private readonly VIDEO_STORE_NAME = 'videos';
   private dbPromise: Promise<IDBDatabase>;
 
   constructor() {
@@ -15,12 +16,15 @@ export class PersistenceService {
 
   private initDb(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open(this.DB_NAME, 1);
+      const request = indexedDB.open(this.DB_NAME, 2); // Version bumped for new store
 
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
         if (!db.objectStoreNames.contains(this.IMAGE_STORE_NAME)) {
           db.createObjectStore(this.IMAGE_STORE_NAME, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(this.VIDEO_STORE_NAME)) {
+          db.createObjectStore(this.VIDEO_STORE_NAME, { keyPath: 'id' });
         }
       };
 
@@ -40,7 +44,7 @@ export class PersistenceService {
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.IMAGE_STORE_NAME, 'readwrite');
       const store = transaction.objectStore(this.IMAGE_STORE_NAME);
-      const request = store.put({ id, imageData });
+      store.put({ id, imageData });
       transaction.oncomplete = () => resolve();
       transaction.onerror = () => reject(transaction.error);
     });
@@ -59,29 +63,57 @@ export class PersistenceService {
     });
   }
 
+  async saveVideo(id: string, videoData: Blob): Promise<void> {
+    const db = await this.dbPromise;
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(this.VIDEO_STORE_NAME, 'readwrite');
+      const store = transaction.objectStore(this.VIDEO_STORE_NAME);
+      store.put({ id, videoData });
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+  }
+
+  async loadVideo(id: string): Promise<Blob | null> {
+    const db = await this.dbPromise;
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(this.VIDEO_STORE_NAME, 'readonly');
+      const store = transaction.objectStore(this.VIDEO_STORE_NAME);
+      const request = store.get(id);
+      request.onsuccess = () => {
+        resolve(request.result ? request.result.videoData : null);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  }
+
   async savePresentation(presentation: Presentation): Promise<void> {
     try {
-      // 1. Save presentation metadata (without images) to localStorage
-      const presentationToStore = { ...presentation, slides: presentation.slides.map(s => ({ ...s, imageUrl: '' })) };
+      const presentationToStore = { 
+        ...presentation, 
+        slides: presentation.slides.map(s => ({ ...s, imageUrl: '', videoUrl: '' })) 
+      };
       localStorage.setItem(this.PRESENTATION_PREFIX + presentation.id, JSON.stringify(presentationToStore));
 
-      // 2. Save all image data to IndexedDB
-      const imagePromises: Promise<void>[] = [];
+      const mediaPromises: Promise<void>[] = [];
       presentation.slides.forEach((slide, index) => {
         if (slide.imageUrl && slide.imageUrl.startsWith('data:image')) {
           const imageId = `${this.PRESENTATION_PREFIX}${presentation.id}_img_${index}`;
-          imagePromises.push(this.saveImage(imageId, slide.imageUrl));
+          mediaPromises.push(this.saveImage(imageId, slide.imageUrl));
         }
+        // Note: We don't save videoUrl here because it's a blob URL. The video blob
+        // is saved to IndexedDB at the time of generation.
       });
-      await Promise.all(imagePromises);
+      await Promise.all(mediaPromises);
 
-      // 3. Clean up old image entries from localStorage for this presentation
+      // Clean up old localStorage image entries
       for (let i = 0; i < presentation.slides.length + 10; i++) {
         localStorage.removeItem(`${this.PRESENTATION_PREFIX}${presentation.id}_img_${i}`);
       }
+
     } catch (e) {
       console.error('Error saving presentation:', e);
-      alert('Could not save presentation. The database might be full or blocked.');
+      throw new Error('Could not save presentation. The database might be full or blocked.');
     }
   }
 
@@ -92,22 +124,25 @@ export class PersistenceService {
       
       const presentation: Presentation = JSON.parse(stored);
       
-      const imageLoadPromises = presentation.slides.map(async (slide, index) => {
+      const mediaLoadPromises = presentation.slides.map(async (slide, index) => {
+        // Load image
         const imageId = `${this.PRESENTATION_PREFIX}${id}_img_${index}`;
-        // Try loading from IndexedDB first
-        let imageUrl = await this.loadImage(imageId);
-        
-        // If not in IndexedDB, try localStorage (for backward compatibility/migration)
-        if (!imageUrl) {
-          imageUrl = localStorage.getItem(imageId);
-        }
-        
+        const imageUrl = await this.loadImage(imageId);
         if (imageUrl) {
           slide.imageUrl = imageUrl;
         }
+
+        // Load video
+        if (slide.hasVideo) {
+          const videoId = `${this.PRESENTATION_PREFIX}${id}_vid_${index}`;
+          const videoBlob = await this.loadVideo(videoId);
+          if (videoBlob) {
+            slide.videoUrl = URL.createObjectURL(videoBlob);
+          }
+        }
       });
       
-      await Promise.all(imageLoadPromises);
+      await Promise.all(mediaLoadPromises);
 
       return presentation;
     } catch (e) {
@@ -122,7 +157,16 @@ export class PersistenceService {
       return history ? JSON.parse(history) : [];
     } catch (e) {
       console.error('Error getting history:', e);
-      return [];
+      return []; // Return empty array instead of throwing to prevent app crash
+    }
+  }
+
+  saveHistory(history: HistoryItem[]): void {
+    try {
+      localStorage.setItem(this.HISTORY_KEY, JSON.stringify(history));
+    } catch (e) {
+      console.error('Error saving history:', e);
+      throw new Error(`Failed to save history to local storage: ${(e as Error).message}`);
     }
   }
 }

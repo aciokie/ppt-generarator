@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, input, output, signal, computed, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Presentation, Slide, Theme, SlideLayout, PromptHistoryItem } from '../../types';
+import { Presentation, Slide, Theme, SlideLayout, PromptHistoryItem, PptxAnimation } from '../../types';
 import { SlideComponent } from '../slide/slide.component';
 import { GeminiService } from '../../services/gemini.service';
 import { UndoRedoService } from '../../services/undo-redo.service';
@@ -88,7 +88,7 @@ export class PresentationEditorComponent {
   };
 
   readonly availableLayouts: { name: SlideLayout; displayName: string; description: string; icon: string }[] = [
-    // Original
+    // Original & Existing
     { name: 'title', displayName: 'Title', description: 'A standard title and subtitle slide.', icon: 'title' },
     { name: 'section_header', displayName: 'Section Header', description: 'A bold header to introduce a new section.', icon: 'article' },
     { name: 'content_left', displayName: 'Content Left', description: 'Content on the left, media on the right.', icon: 'vertical_split' },
@@ -112,14 +112,11 @@ export class PresentationEditorComponent {
     { name: 'chart_line', displayName: 'Line Chart', description: 'Show trends over time with a line chart.', icon: 'show_chart' },
     { name: 'chart_pie', displayName: 'Pie Chart', description: 'Represent proportions with a pie chart.', icon: 'pie_chart' },
     { name: 'chart_doughnut', displayName: 'Doughnut Chart', description: 'A pie chart with a hole, for proportions.', icon: 'donut_small' },
-    { name: 'conclusion', displayName: 'Conclusion', description: 'A final, concluding slide.', icon: 'flag' },
-    // Advanced
     { name: 'image_overlap_left', displayName: 'Image Overlap', description: 'Text block overlapping a large background image.', icon: 'layers' },
     { name: 'alternating_feature_list', displayName: 'Alternating List', description: 'A vertical list with alternating content.', icon: 'view_timeline' },
     { name: 'hub_and_spoke', displayName: 'Hub & Spoke', description: 'A central topic with connected points.', icon: 'hub' },
     { name: 'cycle_diagram', displayName: 'Cycle Diagram', description: 'Illustrates a continuous, circular process.', icon: 'loop' },
     { name: 'venn_diagram', displayName: 'Venn Diagram', description: 'Show the overlap between two concepts.', icon: 'view_cozy' },
-    // New 30
     { name: 'quadrant_chart', displayName: 'Quadrant Chart', description: 'A 2x2 matrix for analysis (e.g., BCG).', icon: 'dashboard_customize' },
     { name: 'bridge_chart', displayName: 'Bridge Chart', description: 'Shows cumulative effect of positive/negative values.', icon: 'waterfall_chart' },
     { name: 'gantt_chart_simple', displayName: 'Gantt Chart', description: 'A simple project timeline chart.', icon: 'bar_chart_4_bars' },
@@ -150,6 +147,45 @@ export class PresentationEditorComponent {
     { name: 'faq', displayName: 'FAQ', description: 'A question and answer format.', icon: 'quiz' },
     { name: 'call_to_action', displayName: 'Call to Action', description: 'A slide with a large, clear call to action.', icon: 'ads_click' },
     { name: 'world_map_pins', displayName: 'Map Pins', description: 'A world map background with pins for locations.', icon: 'public' },
+    // New Advanced Layouts
+    { name: 'agenda', displayName: 'Agenda', description: 'A list of topics or schedules for the presentation.', icon: 'event_note' },
+    { name: 'key_takeaways', displayName: 'Key Takeaways', description: 'A summary of the most important points.', icon: 'check_circle' },
+    { name: 'statement', displayName: 'Statement', description: 'A slide with a single, powerful sentence.', icon: 'campaign' },
+    { name: 'thank_you', displayName: 'Thank You', description: 'A closing slide to thank the audience.', icon: 'thumb_up' },
+    { name: 'contact_information', displayName: 'Contact Info', description: 'Share contact details and social media.', icon: 'contact_mail' },
+    { name: 'next_steps', displayName: 'Next Steps', description: 'Outline the actions to be taken after the presentation.', icon: 'fast_forward' },
+    { name: 'speaker_introduction', displayName: 'Speaker Intro', description: 'Introduce a speaker with their photo and bio.', icon: 'person' },
+    { name: 'testimonial_single', displayName: 'Testimonial', description: 'Feature a single, impactful customer testimonial.', icon: 'chat_bubble' },
+    { name: 'testimonial_three', displayName: 'Testimonials (3)', description: 'Showcase three customer testimonials.', icon: 'forum' },
+    { name: 'definition_list', displayName: 'Definition List', description: 'A list of terms and their definitions.', icon: 'menu_book' },
+    { name: 'numbered_highlights_four', displayName: 'Highlights (4)', description: 'Present four key highlights with large numbers.', icon: 'looks_4' },
+    { name: 'icon_grid_four', displayName: 'Icon Grid', description: 'A 2x2 grid of icons with labels and text.', icon: 'apps' },
+    { name: 'chevron_list', displayName: 'Chevron List', description: 'A process list using chevron arrows.', icon: 'navigate_next' },
+    { name: 'arrow_process_flow', displayName: 'Arrow Process', description: 'A process flow using large, bold arrows.', icon: 'arrow_forward' },
+    { name: 'diverging_arrows', displayName: 'Diverging Arrows', description: 'Show opposing forces from a central point.', icon: 'sync_alt' },
+    { name: 'converging_arrows', displayName: 'Converging Arrows', description: 'Show forces coming together to a central point.', icon: 'merge_type' },
+    { name: 'roadmap_horizontal', displayName: 'Roadmap', description: 'A horizontal timeline for project milestones.', icon: 'signpost' },
+    { name: 'company_timeline', displayName: 'Company Timeline', description: 'A formal timeline for company history.', icon: 'business' },
+    { name: 'roadmap_vertical', displayName: 'Vertical Roadmap', description: 'A vertical timeline for project milestones.', icon: 'double_arrow' },
+    { name: 'gear_diagram', displayName: 'Gear Diagram', description: 'Use interlocking gears to show a process.', icon: 'settings' },
+    { name: 'word_cloud', displayName: 'Word Cloud', description: 'A visual cloud of keywords.', icon: 'cloud' },
+    { name: 'matrix_3x3', displayName: '3x3 Matrix', description: 'A 3x3 grid for advanced analysis.', icon: 'border_all' },
+    { name: 'progress_bar_list', displayName: 'Progress Bars', description: 'A list of items with completion percentages.', icon: 'checklist_rtl' },
+    { name: 'gauge_chart_three', displayName: 'Gauge Charts (3)', description: 'Three gauge charts for KPI monitoring.', icon: 'speed' },
+    { name: 'chart_radar', displayName: 'Radar Chart', description: 'Compare multiple quantitative variables.', icon: 'radar' },
+    { name: 'chart_heatmap', displayName: 'Heatmap', description: 'A matrix chart using color to show intensity.', icon: 'view_kanban' },
+    { name: 'data_table_highlight', displayName: 'Highlighted Table', description: 'A data table with a highlighted row or column.', icon: 'view_week' },
+    { name: 'project_dashboard', displayName: 'Dashboard', description: 'A dashboard with multiple stats and charts.', icon: 'dashboard' },
+    { name: 'cover_page_logo', displayName: 'Cover Page', description: 'A title slide with a prominent logo area.', icon: 'bookmark' },
+    { name: 'image_header_text_below', displayName: 'Image Header', description: 'A full-width image at the top with text below.', icon: 'web_asset' },
+    { name: 'image_grid_three', displayName: 'Image Grid (3)', description: 'A grid of three images (1 large, 2 small).', icon: 'view_quilt' },
+    { name: 'image_grid_five', displayName: 'Image Grid (5)', description: 'A dynamic grid of five images.', icon: 'auto_awesome_mosaic' },
+    { name: 'image_carousel_mockup', displayName: 'Image Carousel', description: 'Simulates a carousel of images.', icon: 'view_carousel' },
+    { name: 'image_with_side_bullets', displayName: 'Image & Bullets', description: 'A side-by-side image and bullet points.', icon: 'align_horizontal_center' },
+    { name: 'image_before_after', displayName: 'Before & After', description: 'A split-screen comparison of two images.', icon: 'transform' },
+    { name: 'device_mockup_phone', displayName: 'Phone Mockup', description: 'Display content inside a smartphone mockup.', icon: 'smartphone' },
+    { name: 'device_mockup_laptop', displayName: 'Laptop Mockup', description: 'Display content inside a laptop mockup.', icon: 'laptop' },
+    { name: 'conclusion', displayName: 'Conclusion', description: 'A final, concluding slide.', icon: 'flag' },
   ];
 
   currentSlide = computed(() => {
@@ -201,7 +237,7 @@ export class PresentationEditorComponent {
         }
     }, { allowSignalWrites: true });
   }
-  // FIX: Added private `diff` method to implement text comparison for prompts.
+
   private diff(oldStr: string, newStr: string): { text: string; type: 'added' | 'removed' | 'same' }[] {
     const oldLines = oldStr.split('\n');
     const newLines = newStr.split('\n');
@@ -210,7 +246,7 @@ export class PresentationEditorComponent {
     const dp = Array(oldLines.length + 1).fill(null).map(() => Array(newLines.length + 1).fill(0));
 
     for (let i = oldLines.length - 1; i >= 0; i--) {
-        for (let j = newLines.length - 1; j >= 0; j--) {
+        for (let j = newLines.length - 1; i >= 0; i--) {
             if (oldLines[i] === newLines[j]) {
                 dp[i][j] = 1 + dp[i + 1][j + 1];
             } else {
@@ -351,6 +387,18 @@ export class PresentationEditorComponent {
       this.commitChange({ ...pres, slides: newSlides });
   }
 
+  changeAnimation(newAnimation: string): void {
+    const pres = this.presentation();
+    const slide = this.currentSlide();
+    if (!pres || !slide) return;
+    
+    const newSlide: Slide = { ...slide, animation: newAnimation as PptxAnimation };
+    const newSlides = [...pres.slides];
+    newSlides[this.currentSlideIndex()] = newSlide;
+    
+    this.commitChange({ ...pres, slides: newSlides });
+  }
+
   handleRemoveImage(): void {
     const pres = this.presentation();
     if (!pres) return;
@@ -367,33 +415,50 @@ export class PresentationEditorComponent {
     this.commitChange(newPresentation);
   }
 
-  async generateImageForCurrentSlide(generationConfig: { style: string, aspectRatio: string }): Promise<void> {
+  async generateImageForCurrentSlide(generationConfig: { style: string; aspectRatio: string }): Promise<void> {
     const pres = this.presentation();
     const slideIndex = this.currentSlideIndex();
     const slide = pres?.slides[slideIndex];
     if (!slide || !slide.imagePrompt || !pres) return;
 
-    // Set generating state - don't add to undo history
+    // Set generating state
     const slidesWithSpinner = [...pres.slides];
     slidesWithSpinner[slideIndex] = { ...slide, isGeneratingImage: true };
     this.presentationChange.emit({ ...pres, slides: slidesWithSpinner });
 
-    const improvedPrompt = await this.geminiService.improveImagePrompt(slide.title, slide.content, slide.imagePrompt);
-    const promptToUse = improvedPrompt || slide.imagePrompt;
-    const imageUrl = await this.geminiService.generateImageFromPrompt(promptToUse, generationConfig.style, generationConfig.aspectRatio);
+    let imageUrl: string | null = null;
+    let promptToUse = slide.imagePrompt;
 
-    const finalPres = this.presentation()!;
-    const finalSlides = [...finalPres.slides];
-    const oldSlide = finalSlides[slideIndex];
+    try {
+        const improvedPrompt = await this.geminiService.improveImagePrompt(slide.title, slide.content, slide.imagePrompt);
+        promptToUse = improvedPrompt || slide.imagePrompt;
 
-    let updatedSlide: Slide;
-    if (imageUrl) {
-        updatedSlide = { ...oldSlide, imageUrl, imagePrompt: promptToUse, isGeneratingImage: false };
-    } else {
-        updatedSlide = { ...oldSlide, isGeneratingImage: false };
+        let aspectRatioToUse = generationConfig.aspectRatio;
+        if (aspectRatioToUse === 'Auto') {
+            aspectRatioToUse = await this.geminiService.suggestAspectRatio(slide.title, slide.content, promptToUse);
+        }
+
+        imageUrl = await this.geminiService.generateImageFromPrompt(promptToUse, generationConfig.style, aspectRatioToUse);
+    } catch (e) {
+        console.error("Caught error during image generation:", e);
+        // The geminiService already set the user-facing error.
+    } finally {
+        const finalPres = this.presentation()!;
+        if (!finalPres) return;
+
+        const finalSlides = [...finalPres.slides];
+        const oldSlide = finalSlides[slideIndex];
+        
+        const updatedSlide: Slide = {
+            ...oldSlide,
+            imageUrl: imageUrl || oldSlide.imageUrl, // Keep old image on failure
+            imagePrompt: promptToUse,
+            isGeneratingImage: false
+        };
+
+        finalSlides[slideIndex] = updatedSlide;
+        this.commitChange({ ...finalPres, slides: finalSlides });
     }
-    finalSlides[slideIndex] = updatedSlide;
-    this.commitChange({ ...finalPres, slides: finalSlides });
   }
 
   addSlide(): void {
@@ -664,24 +729,33 @@ export class PresentationEditorComponent {
     this.isImageEditModalOpen.set(false);
     this.imageEditInstruction.set('');
   
-    const newPrompt = await this.geminiService.getEditedImagePrompt(info.currentPrompt, instruction);
-    const promptToUse = newPrompt || `${info.currentPrompt}, ${instruction}`;
-  
-    const imageUrl = await this.geminiService.generateImageFromPrompt(promptToUse, info.style, info.aspectRatio);
-  
-    // Update final presentation state
-    const finalPres = this.presentation();
-    if (!finalPres) return;
-    const finalSlides = [...finalPres.slides];
-    const oldSlide = finalSlides[info.slideIndex];
-    let updatedSlide: Slide;
-    if (imageUrl) {
-      updatedSlide = { ...oldSlide, imageUrl, imagePrompt: promptToUse, isGeneratingImage: false };
-    } else {
-      updatedSlide = { ...oldSlide, isGeneratingImage: false }; // Failed
+    let imageUrl: string | null = null;
+    let promptToUse = info.currentPrompt;
+
+    try {
+        const newPrompt = await this.geminiService.getEditedImagePrompt(info.currentPrompt, instruction);
+        promptToUse = newPrompt || `${info.currentPrompt}, ${instruction}`;
+    
+        imageUrl = await this.geminiService.generateImageFromPrompt(promptToUse, info.style, info.aspectRatio);
+    } catch (e) {
+        console.error("Caught error during image edit/generation:", e);
+    } finally {
+        // Update final presentation state
+        const finalPres = this.presentation();
+        if (!finalPres) return;
+        const finalSlides = [...finalPres.slides];
+        const oldSlide = finalSlides[info.slideIndex];
+        
+        const updatedSlide: Slide = {
+            ...oldSlide,
+            imageUrl: imageUrl || oldSlide.imageUrl,
+            imagePrompt: promptToUse,
+            isGeneratingImage: false
+        };
+
+        finalSlides[info.slideIndex] = updatedSlide;
+        this.commitChange({ ...finalPres, slides: finalSlides });
     }
-    finalSlides[info.slideIndex] = updatedSlide;
-    this.commitChange({ ...finalPres, slides: finalSlides });
   }
 
   async handleGenerateContentFromImage(): Promise<void> {
@@ -801,7 +875,7 @@ export class PresentationEditorComponent {
       this.aiCorePrompt.set(currentPrompt);
       this.evolutionFeedbackSummary.set(this.getFeedbackSummary());
     } catch (e) {
-      this.geminiService.error.set(`Failed to load AI evolution data: ${(e as Error).message}`);
+      this.geminiService.error.set({ message: `Failed to load AI evolution data: ${(e as Error).message}`, reportable: true });
     } finally {
       this.isEvolving.set(false);
     }
@@ -871,235 +945,748 @@ export class PresentationEditorComponent {
     await this.aiEvolutionService.saveCorePrompt(newPrompt, this.evolutionFeedbackSummary());
     this.isAiEvolutionModalOpen.set(false);
   }
+  
+  private getContentArray(content: string | string[]): string[] {
+    if (Array.isArray(content)) {
+        return content.filter(item => typeof item === 'string' && item.trim() !== '');
+    }
+    if (typeof content === 'string') {
+        return content.split('\n').filter(line => line.trim() !== '');
+    }
+    return [];
+  }
+
+  private normalizeLayout(layout: SlideLayout | string): SlideLayout {
+    const layoutAliasMap: Record<string, SlideLayout> = {
+        'contentleft': 'content_left',
+        'contentright': 'content_right',
+        'twocolumn': 'two_column',
+        'threecolumn': 'three_column',
+        'sectionheader': 'section_header',
+        'chapterdivider': 'section_header',
+        'imagefullbleed': 'image_full_bleed',
+        'hubandspoke': 'hub_and_spoke',
+        'imageoverlapleft': 'image_overlap_left',
+        'chartwaterfall': 'bridge_chart',
+        'matrix2x2': 'quadrant_chart',
+        'imagewithhotspots': 'feature_highlight_image',
+        'companytimeline': 'timeline',
+        'imagefocusright': 'image_focus_right',
+        'imagefocusleft': 'image_focus_left',
+        'imagewithsidebullets': 'image_with_side_bullets',
+        'alternatingfeaturelist': 'alternating_feature_list',
+        'coverpagelogo': 'cover_page_logo',
+        'kpidashboardthree': 'kpi_dashboard_three',
+        'featurelisticons': 'feature_list_icons',
+        'calltoaction': 'call_to_action',
+        'statshighlight': 'stats_highlight',
+        'keytakeaways': 'key_takeaways',
+        'thankyou': 'thank_you',
+        'definitionlist': 'definition_list',
+        'teammembersfour': 'team_members_four',
+        'radialdiagram': 'radial_diagram',
+        'stepflow': 'step_flow',
+        'cyclediagram': 'cycle_diagram',
+        'venndiagram': 'venn_diagram',
+        'quadrantchart': 'quadrant_chart',
+        'bridgechart': 'bridge_chart',
+        'ganttchartsimple': 'gantt_chart_simple',
+        'orgchart': 'org_chart',
+        'mindmap': 'mind_map',
+        'fishbonediagram': 'fishbone_diagram',
+        'areachart': 'area_chart',
+        'scatterplot': 'scatter_plot',
+        'bubblechart': 'bubble_chart',
+        'imagegridfour': 'image_grid_four',
+        'imagewithcaptionbelow': 'image_with_caption_below',
+        'textoverimage': 'text_over_image',
+        'quotewithimage': 'quote_with_image',
+        'featurehighlightimage': 'feature_highlight_image',
+        'imagecollage': 'image_collage',
+        'numberedlistlarge': 'numbered_list_large',
+        'stepflowvertical': 'step_flow_vertical',
+        'circularflow': 'circular_flow',
+        'staggeredlist': 'staggered_list',
+        'prosandcons': 'pros_and_cons',
+        'kpidashboardfour': 'kpi_dashboard_four',
+        'targetvsactual': 'target_vs_actual',
+        'worldmappins': 'world_map_pins',
+        'chartradar': 'chart_radar',
+        'chartheatmap': 'chart_heatmap',
+        'datatablehighlight': 'data_table_highlight',
+        'gaugechartthree': 'gauge_chart_three',
+        'progressbarlist': 'progress_bar_list',
+        'roadmaphorizontal': 'roadmap_horizontal',
+        'roadmapvertical': 'roadmap_vertical',
+        'matrix3x3': 'matrix_3x3',
+        'geardiagram': 'gear_diagram',
+        'arrowprocessflow': 'arrow_process_flow',
+        'divergingarrows': 'diverging_arrows',
+        'convergingarrows': 'converging_arrows',
+        'chevronlist': 'chevron_list',
+        'projectdashboard': 'project_dashboard',
+        'imagegridthree': 'image_grid_three',
+        'imagegridfive': 'image_grid_five',
+        'imagecarouselmockup': 'image_carousel_mockup',
+        'imagebeforeafter': 'image_before_after',
+        'devicemockupphone': 'device_mockup_phone',
+        'devicemockuplaptop': 'device_mockup_laptop',
+        'imageheadertextbelow': 'image_header_text_below',
+        'speakerintroduction': 'speaker_introduction',
+        'testimonialsingle': 'testimonial_single',
+        'testimonialthree': 'testimonial_three',
+        'icongridfour': 'icon_grid_four',
+        'numberedhighlightsfour': 'numbered_highlights_four',
+        'contactinformation': 'contact_information',
+        'nextsteps': 'next_steps',
+        'wordcloud': 'word_cloud',
+        'statement': 'statement', // Explicit mapping for clarity
+    };
+    const normalizedKey = layout?.trim().toLowerCase().replace(/[_ ]/g, '') || '';
+    return layoutAliasMap[normalizedKey] || layout as SlideLayout;
+  }
+
+  private round(value: number, decimals: number = 4): number {
+    return Number(value.toFixed(decimals));
+  }
+
+  private selectSlideForExport(index: number): void {
+    // A simplified navigation without animations for PDF/PNG export.
+    this.currentSlideIndex.set(index);
+  }
 
   private async downloadAsPptx(): Promise<void> {
     const pres = this.presentation();
-    if (!pres || typeof PptxGenJS === 'undefined') return;
+    if (!pres || typeof PptxGenJS === 'undefined') {
+      this.geminiService.error.set({ message: 'Presentation data or PPTX library not available.', reportable: true });
+      return;
+    }
 
     this.isDownloadMenuOpen.set(false);
     this.downloadState.set('pptx');
 
     try {
-        const pptx = new PptxGenJS();
-        pptx.layout = 'LAYOUT_16x9';
+      const pptx = new PptxGenJS();
+      pptx.layout = 'LAYOUT_16x9';
 
-        const theme = pres.theme;
-        const pColor = theme.primaryColor.substring(1);
-        const tColor = theme.textColor.substring(1);
-        const bColor = theme.backgroundColor.substring(1);
+      const theme = pres.theme;
+      const cleanColor = (hex: string) => hex.startsWith('#') ? hex.substring(1) : hex;
 
-        const getContentArray = (content: string | string[]): string[] => {
-            if (Array.isArray(content)) return content;
-            if (typeof content === 'string') return content.split('\n').filter(Boolean);
-            return [];
-        };
-
-        for (const slide of pres.slides) {
-            const pptxSlide = pptx.addSlide({ bkgd: bColor });
-            if (slide.speakerNotes) {
-                const notes = Array.isArray(slide.speakerNotes) ? slide.speakerNotes.join('\n\n') : slide.speakerNotes;
-                pptxSlide.addNotes(notes);
-            }
-
-            if (slide.animation && slide.animation !== 'none') {
-                let transition: { type: string, advClick: boolean, dur: number, opts?: any } = { type: 'fade', advClick: true, dur: 1 };
-                switch (slide.animation) {
-                    case 'fadeIn':
-                        transition.type = 'fade';
-                        break;
-                    case 'flyIn':
-                        transition.type = 'push';
-                        transition.opts = { dir: 'd' }; // 'd' is for down
-                        break;
-                    case 'wipe':
-                        transition.type = 'wipe';
-                        transition.opts = { dir: 'r' }; // 'r' for right
-                        break;
-                    case 'zoomIn':
-                        transition.type = 'zoom';
-                        transition.opts = { dir: 'in' };
-                        break;
-                }
-                pptxSlide.transition = transition;
-            }
-
-            const content = getContentArray(slide.content);
-            const titleOpts = { fontFace: theme.titleFont, color: pColor, bold: true };
-            const bodyOpts = { fontFace: theme.bodyFont, color: tColor };
-
-            switch (slide.layout) {
-                case 'title':
-                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 2.0, w: '90%', x: '5%', fontSize: 48 });
-                    if (content[0]) pptxSlide.addText(content[0], { ...bodyOpts, align: 'center', y: 3.5, w: '80%', x: '10%', fontSize: 24, color: tColor });
-                    break;
-                case 'section_header':
-                    pptxSlide.addShape(pptx.shapes.RECTANGLE, { x: 0, y: 2.5, w: '100%', h: 1.5, fill: { color: pColor, transparency: 85 } });
-                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 2.9, w: '90%', x: '5%', fontSize: 44 });
-                    break;
-                case 'conclusion':
-                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 2.5, w: '90%', x: '5%', fontSize: 48 });
-                    if (content[0]) pptxSlide.addText(content[0], { ...bodyOpts, align: 'center', y: 4.0, w: '80%', x: '10%', fontSize: 22 });
-                    break;
-                case 'content_left':
-                case 'image_focus_right':
-                    pptxSlide.addText(slide.title, { ...titleOpts, x: 0.5, y: 0.5, w: '50%', fontSize: 32 });
-                    pptxSlide.addText(content, { ...bodyOpts, x: 0.5, y: 1.5, w: '50%', h: 3.5, bullet: true, fontSize: slide.isSourceSlide ? 10 : 16 });
-                    if (slide.imageUrl) pptxSlide.addImage({ data: slide.imageUrl, x: 5.5, y: 1.0, w: 4.0, h: 3.5 });
-                    break;
-                case 'content_right':
-                case 'image_focus_left':
-                    pptxSlide.addText(slide.title, { ...titleOpts, x: 5.5, y: 0.5, w: '40%', fontSize: 32 });
-                    pptxSlide.addText(content, { ...bodyOpts, x: 5.5, y: 1.5, w: '40%', h: 3.5, bullet: true, fontSize: slide.isSourceSlide ? 10 : 16 });
-                    if (slide.imageUrl) pptxSlide.addImage({ data: slide.imageUrl, x: 0.5, y: 1.0, w: 4.5, h: 3.5 });
-                    break;
-                case 'image_full_bleed':
-                case 'text_over_image':
-                    if (slide.imageUrl) pptxSlide.addImage({ data: slide.imageUrl, x: 0, y: 0, w: '100%', h: '100%' });
-                    pptxSlide.addText(slide.title, { ...titleOpts, color: 'FFFFFF', align: 'center', y: 2.5, w: '90%', x: '5%', fontSize: 48, ...{ glow: { size: 10, color: '000000', opacity: 0.5 } } });
-                    if (content[0]) pptxSlide.addText(content[0], { ...bodyOpts, color: 'FFFFFF', align: 'center', y: 4.0, w: '80%', x: '10%', fontSize: 24, ...{ glow: { size: 8, color: '000000', opacity: 0.5 } } });
-                    break;
-                case 'two_column':
-                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 0.5, w: '90%', x: '5%', fontSize: 36 });
-                    const midpoint = Math.ceil(content.length / 2);
-                    pptxSlide.addText(content.slice(0, midpoint), { ...bodyOpts, x: 0.5, y: 1.5, w: '45%', h: 3.5, bullet: true, fontSize: slide.isSourceSlide ? 9 : 14 });
-                    pptxSlide.addText(content.slice(midpoint), { ...bodyOpts, x: 5.2, y: 1.5, w: '45%', h: 3.5, bullet: true, fontSize: slide.isSourceSlide ? 9 : 14 });
-                    break;
-                case 'three_column':
-                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 0.5, w: '90%', x: '5%', fontSize: 36 });
-                    const columns: { title: string, text: string }[] = [];
-                    for (let i = 0; i < content.length; i += 2) columns.push({ title: content[i], text: content[i+1] || '' });
-                    columns.slice(0, 3).forEach((col, i) => {
-                        pptxSlide.addText(col.title, { ...titleOpts, x: 0.5 + i * 3.2, y: 2, w: 3, h: 1, align: 'center', fontSize: 20 });
-                        pptxSlide.addText(col.text, { ...bodyOpts, x: 0.5 + i * 3.2, y: 3, w: 3, h: 2, align: 'center', fontSize: 14 });
-                    });
-                    break;
-                case 'table':
-                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 0.5, w: '90%', x: '5%', fontSize: 36 });
-                    if (slide.tableData) {
-                        const styledData = slide.tableData.map((row, i) => i === 0
-                            ? row.map(cell => ({ text: cell, options: { fill: pColor, color: bColor, bold: true } }))
-                            : row
-                        );
-                        pptxSlide.addTable(styledData, { x: 0.5, y: 1.5, w: 9.0, colW: Array(slide.tableData[0].length).fill(9.0 / slide.tableData[0].length), border: { type: 'solid', pt: 1, color: pColor }, ...bodyOpts });
-                    }
-                    break;
-                case 'chart_bar': case 'chart_line': case 'chart_pie': case 'chart_doughnut': case 'area_chart': case 'scatter_plot': case 'bubble_chart': case 'bridge_chart':
-                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 0.5, w: '90%', x: '5%', fontSize: 36 });
-                    if (slide.chartData) {
-                        const chartTypeMap: any = { 'chart_bar': 'bar', 'chart_line': 'line', 'chart_pie': 'pie', 'chart_doughnut': 'doughnut', 'area_chart': 'area', 'scatter_plot': 'scatter', 'bubble_chart': 'bubble', 'bridge_chart': 'bar' };
-                        const chartDataForPptx = slide.chartData.datasets.map(d => ({ name: d.label, labels: slide.chartData!.labels, values: d.data }));
-                        const chartOpts: any = { x: 1, y: 1.5, w: 8, h: 3.5, showLegend: true, legendPos: 'b', chartColors: [pColor, tColor.slice(0, 6), '888888', 'F0A030', '40A0F0'] };
-                        if (slide.layout === 'bridge_chart') {
-                            chartOpts.barDir = 'col';
-                            chartOpts.catAxisLabelRotate = 45;
-                        }
-                        pptxSlide.addChart(chartTypeMap[slide.layout], chartDataForPptx, chartOpts);
-                    }
-                    break;
-                case 'quote':
-                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 0.5, w: '90%', x: '5%', fontSize: 24 });
-                    pptxSlide.addText('“', { x: 1, y: 1.5, w: 1, h: 1, fontSize: 96, color: pColor, bold: false, transparency: 80 });
-                    if (content[0]) pptxSlide.addText(content[0], { ...bodyOpts, align: 'center', x: '15%', y: 2.5, w: '70%', h: 1.5, fontSize: 32, italic: true });
-                    if (content[1]) pptxSlide.addText(`— ${content[1]}`, { ...bodyOpts, align: 'right', x: '15%', y: 4.0, w: '70%', h: 0.5, fontSize: 20 });
-                    break;
-                case 'process':
-                case 'step_flow':
-                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 0.5, w: '90%', x: '5%', fontSize: 36 });
-                    const processItems: { item1: string, item2: string }[] = [];
-                    for (let i = 0; i < content.length; i+=2) processItems.push({ item1: content[i], item2: content[i+1] || ''});
-                    const stepCount = Math.min(processItems.length, 5);
-                    const stepW = 1.6; const arrowW = 0.5; const totalW = stepCount * stepW + (stepCount - 1) * arrowW;
-                    let startX = (10 - totalW) / 2;
-                    processItems.slice(0, stepCount).forEach((item, i) => {
-                        pptxSlide.addShape(pptx.shapes.RECTANGLE, { x: startX, y: 2.0, w: stepW, h: 2.5, fill: { color: pColor, transparency: (i * 15) } });
-                        pptxSlide.addText(item.item1, { shape: pptx.shapes.RECTANGLE, x: startX, y: 2.0, w: stepW, h: 1.0, align: 'center', bold: true, color: bColor, fontSize: 16 });
-                        pptxSlide.addText(item.item2, { shape: pptx.shapes.RECTANGLE, x: startX, y: 3.0, w: stepW, h: 1.5, align: 'center', color: bColor, fontSize: 12 });
-                        startX += stepW;
-                        if (i < stepCount - 1) {
-                            pptxSlide.addShape(pptx.shapes.RIGHT_ARROW, { x: startX, y: 2.75, w: arrowW, h: 1.0, fill: { color: tColor } });
-                            startX += arrowW;
-                        }
-                    });
-                    break;
-                case 'pyramid':
-                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 0.5, w: '90%', x: '5%', fontSize: 36 });
-                    const pyramidLevels = content.length;
-                    const pyramidH = 0.6; let pyramidY = 4.8 - pyramidH;
-                    for (let i = 0; i < pyramidLevels; i++) {
-                        const level = pyramidLevels - 1 - i;
-                        const width = 2.0 + level * 1.0; const x = (10 - width) / 2;
-                        pptxSlide.addShape(pptx.shapes.TRAPEZOID, { x, y: pyramidY, w: width, h: pyramidH, fill: { color: pColor, transparency: (i * 15) }, line: { color: bColor, width: 1 } });
-                        pptxSlide.addText(content[level], { x, y: pyramidY, w: width, h: pyramidH, align: 'center', valign: 'middle', color: bColor, bold: true });
-                        pyramidY -= pyramidH;
-                    }
-                    break;
-                case 'org_chart':
-                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 0.5, w: '90%', x: '5%', fontSize: 36 });
-                    const levels: string[][] = []; let currentLevel: string[] = [];
-                    content.forEach(item => { if (item === '---') { levels.push(currentLevel); currentLevel = []; } else { currentLevel.push(item); } });
-                    levels.push(currentLevel);
-                    const boxW = 2.0, boxH = 0.8, vGap = 0.6, hGap = 0.5;
-                    const rootX = (10 - boxW) / 2, rootY = 1.5;
-                    if (levels[0] && levels[0].length >= 2) {
-                        pptxSlide.addShape(pptx.shapes.RECTANGLE, { x: rootX, y: rootY, w: boxW, h: boxH, fill: { color: pColor } });
-                        pptxSlide.addText(`${levels[0][0]}\n${levels[0][1]}`, { x: rootX, y: rootY, w: boxW, h: boxH, align: 'center', valign: 'middle', color: bColor, fontSize: 10 });
-                    }
-                    if (levels[1]) {
-                        const l2Pairs = []; for (let i = 0; i < levels[1].length; i += 2) { l2Pairs.push({ name: levels[1][i], title: levels[1][i+1] || '' }); }
-                        const l2Count = l2Pairs.length; const totalW_l2 = l2Count * boxW + (l2Count - 1) * hGap;
-                        let startX_l2 = (10 - totalW_l2) / 2; const l2Y = rootY + boxH + vGap;
-                        pptxSlide.addShape(pptx.shapes.LINE, { x: rootX + boxW / 2, y: rootY + boxH, w: 0, h: vGap / 2, line: { color: pColor, width: 2 } });
-                        if (l2Count > 1) { pptxSlide.addShape(pptx.shapes.LINE, { x: startX_l2 + boxW / 2, y: rootY + boxH + vGap / 2, w: totalW_l2 - boxW, h: 0, line: { color: pColor, width: 2 } }); }
-                        l2Pairs.forEach((pair, i) => {
-                            const x = startX_l2 + i * (boxW + hGap);
-                            pptxSlide.addShape(pptx.shapes.LINE, { x: x + boxW / 2, y: rootY + boxH + vGap/2, w: 0, h: vGap/2, line: { color: pColor, width: 2 } });
-                            pptxSlide.addShape(pptx.shapes.RECTANGLE, { x, y: l2Y, w: boxW, h: boxH, fill: { color: tColor, transparency: 85 } });
-                            pptxSlide.addText(`${pair.name}\n${pair.title}`, { x, y: l2Y, w: boxW, h: boxH, align: 'center', valign: 'middle', color: tColor, fontSize: 10 });
-                        });
-                    }
-                    break;
-                case 'venn_diagram':
-                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 0.5, w: '90%', x: '5%', fontSize: 36 });
-                    const venn = { itemA: { title: content[0] || '', text: content[1] || '' }, itemB: { title: content[2] || '', text: content[3] || '' }, intersection: { title: content[4] || '', text: content[5] || '' } };
-                    pptxSlide.addShape(pptx.shapes.OVAL, { x: 2.5, y: 2.0, w: 3.5, h: 3.5, fill: { color: pColor, transparency: 70 } });
-                    pptxSlide.addShape(pptx.shapes.OVAL, { x: 4.0, y: 2.0, w: 3.5, h: 3.5, fill: { color: tColor, transparency: 70 } });
-                    pptxSlide.addText(venn.itemA.title, { x: 2, y: 2.5, w: 2, h: 0.5, align: 'center', bold: true, fontSize: 16, color: tColor });
-                    pptxSlide.addText(venn.itemA.text, { x: 2, y: 3.0, w: 2, h: 1, align: 'center', fontSize: 12, color: tColor });
-                    pptxSlide.addText(venn.itemB.title, { x: 6, y: 2.5, w: 2, h: 0.5, align: 'center', bold: true, fontSize: 16, color: tColor });
-                    pptxSlide.addText(venn.itemB.text, { x: 6, y: 3.0, w: 2, h: 1, align: 'center', fontSize: 12, color: tColor });
-                    pptxSlide.addText(venn.intersection.title, { x: 4, y: 2.8, w: 2, h: 0.5, align: 'center', bold: true, fontSize: 16, color: tColor });
-                    pptxSlide.addText(venn.intersection.text, { x: 4, y: 3.3, w: 2, h: 1, align: 'center', fontSize: 12, color: tColor });
-                    break;
-                case 'hub_and_spoke': case 'radial_diagram': case 'mind_map':
-                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 0.5, w: '90%', x: '5%', fontSize: 36 });
-                    const hub = content[0] || 'Center'; const spokes = content.slice(1);
-                    const centerX = 5.0, centerY = 3.0, radius = 2.0, hubSize = 1.5;
-                    pptxSlide.addShape(pptx.shapes.OVAL, { x: centerX - hubSize/2, y: centerY - hubSize/2, w: hubSize, h: hubSize, fill: { color: pColor } });
-                    pptxSlide.addText(hub, { x: centerX - hubSize/2, y: centerY - hubSize/2, w: hubSize, h: hubSize, align: 'center', valign: 'middle', color: bColor, bold: true, fontSize: 14 });
-                    spokes.slice(0, 8).forEach((spoke, i) => {
-                        const angle = (i / spokes.length) * 2 * Math.PI;
-                        const spokeX = centerX + radius * Math.cos(angle); const spokeY = centerY + radius * Math.sin(angle);
-                        pptxSlide.addShape(pptx.shapes.LINE, { x: centerX, y: centerY, w: spokeX - centerX, h: spokeY - centerY, line: { color: pColor, width: 1 } });
-                        pptxSlide.addShape(pptx.shapes.OVAL, { x: spokeX - 0.5, y: spokeY - 0.5, w: 1.2, h: 1.2, fill: { color: tColor, transparency: 85 } });
-                        pptxSlide.addText(spoke, { x: spokeX - 0.5, y: spokeY - 0.5, w: 1.2, h: 1.2, align: 'center', valign: 'middle', fontSize: 10, color: tColor });
-                    });
-                    break;
-                default: // Generic fallback for layouts not yet implemented
-                    pptxSlide.addText(slide.title, { ...titleOpts, align: 'center', y: 0.5, w: '90%', x: '5%', fontSize: 36 });
-                    if (slide.imageUrl) {
-                        pptxSlide.addText(content, { ...bodyOpts, x: 0.5, y: 1.5, w: '45%', h: 3.5, bullet: true, fontSize: 14 });
-                        pptxSlide.addImage({ data: slide.imageUrl, x: 5.2, y: 1.5, w: 4.3, h: 3.5 });
-                    } else {
-                        pptxSlide.addText(content, { ...bodyOpts, x: 0.5, y: 1.5, w: '90%', h: 3.5, bullet: true, fontSize: 14 });
-                    }
-                    break;
+      for (const slide of pres.slides) {
+        const normalizedLayout = this.normalizeLayout(slide.layout);
+        const transitionOptions: any = {};
+        if (slide.animation && slide.animation !== 'none') {
+            transitionOptions.duration = 1;
+            transitionOptions.advClick = true;
+            switch(slide.animation) {
+                case 'fadeIn': transitionOptions.type = 'fade'; break;
+                case 'flyIn': transitionOptions.type = 'push'; transitionOptions.dir = 'l'; break;
+                case 'wipe': transitionOptions.type = 'wipe'; transitionOptions.dir = 'l'; break;
+                case 'zoomIn': transitionOptions.type = 'zoom'; transitionOptions.dir = 'in'; break;
             }
         }
-        await pptx.writeFile({ fileName: `${pres.title}.pptx` });
+        
+        const pptxSlide = pptx.addSlide({ transition: transitionOptions });
+        pptxSlide.background = { color: cleanColor(theme.backgroundColor) };
+
+        const titleOpts: any = { fontFace: theme.titleFont, color: cleanColor(theme.primaryColor), fontSize: 32, bold: true, align: 'left' };
+        const bodyOpts: any = { fontFace: theme.bodyFont, color: cleanColor(theme.textColor), fontSize: 16 };
+        const content = this.getContentArray(slide.content);
+
+        // Common layout logic for text positioning
+        // NOTE: We increased some vertical margins to prevent overlaps
+        
+        switch (normalizedLayout) {
+          case 'title':
+          case 'conclusion':
+          case 'thank_you':
+          case 'section_header':
+          case 'word_cloud': // Fallback for complex visuals
+            pptxSlide.addText(slide.title, { ...titleOpts, fontSize: 44, x: '5%', y: '35%', w: '90%', h: '20%', align: 'center', autoFit: true });
+            if (content.length > 0) {
+              pptxSlide.addText(content.join('\n'), { ...bodyOpts, fontSize: 22, x: '10%', y: '58%', w: '80%', h: '30%', align: 'center', autoFit: true });
+            }
+            break;
+            
+          case 'statement':
+            // Huge centered text
+            pptxSlide.addText(slide.title, { ...titleOpts, fontSize: 54, x: '5%', y: '30%', w: '90%', h: '40%', align: 'center', autoFit: true });
+            break;
+
+          case 'text_over_image':
+            if (slide.imageUrl) {
+               try {
+                pptxSlide.addImage({ data: slide.imageUrl, sizing: { type: 'cover', w: '100%', h: '100%'} });
+                pptxSlide.addShape(pptx.shapes.RECTANGLE, { x: 0, y: 0, w: '100%', h: '100%', fill: { color: '000000', transparency: 60 } });
+              } catch (e) {
+                console.error("PPTX Export: Failed to add background or overlay.", e);
+              }
+            }
+            pptxSlide.addText(slide.title, { ...titleOpts, color: 'FFFFFF', fontSize: 36, x: '10%', y: '40%', w: '80%', h: '20%', align: 'center', autoFit: true });
+            if(content.length > 0) {
+                pptxSlide.addText(content.join('\n'), { ...bodyOpts, color: 'FFFFFF', fontSize: 18, x: '10%', y: '62%', w: '80%', h: '20%', align: 'center', autoFit: true });
+            }
+            break;
+
+          case 'call_to_action':
+            pptxSlide.addText(slide.title, { ...titleOpts, fontSize: 40, x: '5%', y: '30%', w: '90%', h: '20%', align: 'center', autoFit: true });
+             if (content.length > 0) {
+              pptxSlide.addText(content[0], { x: '30%', y: '55%', w: '40%', h: '12%', align: 'center', ...bodyOpts, fontSize: 20, bold: true, color: cleanColor(theme.backgroundColor), fill: { color: cleanColor(theme.primaryColor) }, autoFit: true });
+            }
+            break;
+
+          case 'content_left':
+          case 'image_focus_left':
+            pptxSlide.addText(slide.title, { ...titleOpts, fontSize: 32, x: '5%', y: '5%', w: '43%', h: '15%', autoFit: true });
+            pptxSlide.addText( content.map(p => ({ text: p, options: { ...bodyOpts, bullet: { indent: 20 }, paraSpaceAfter: 10 } })), { x: '5%', y: '22%', w: '43%', h: '70%', autoFit: true });
+            if (slide.imageUrl) {
+              pptxSlide.addImage({ data: slide.imageUrl, x: '52%', y: '15%', w: '43%', h: '70%', sizing: { type: 'contain', w: '43%', h: '70%' } });
+            }
+            break;
+            
+          case 'content_right':
+          case 'image_with_side_bullets':
+          case 'image_focus_right':
+            if (slide.imageUrl) {
+              pptxSlide.addImage({ data: slide.imageUrl, x: '5%', y: '15%', w: '43%', h: '70%', sizing: { type: 'contain', w: '43%', h: '70%' } });
+            }
+            pptxSlide.addText(slide.title, { ...titleOpts, fontSize: 32, x: '52%', y: '5%', w: '43%', h: '15%', autoFit: true });
+            pptxSlide.addText( content.map(p => ({ text: p, options: { ...bodyOpts, bullet: { indent: 20 }, paraSpaceAfter: 10 } })), { x: '52%', y: '22%', w: '43%', h: '70%', autoFit: true });
+            break;
+          
+          case 'two_column':
+            pptxSlide.addText(slide.title, { ...titleOpts, x: '5%', y: '5%', w: '90%', h: '10%', align: 'center', autoFit: true });
+            if (slide.isSourceSlide) {
+                const sourceObjects = content.map(line => {
+                    const parts = line.split(' - ');
+                    const uri = parts.pop() || '';
+                    const title = parts.join(' - ');
+                    return { title, uri };
+                });
+                const textObjectsForPptx = sourceObjects.map(source => ({
+                    text: source.title,
+                    options: { ...bodyOpts, fontSize: 9, hyperlink: { url: source.uri, tooltip: `Visit: ${source.uri}` }, bullet: true, paraSpaceAfter: 4 }
+                }));
+                const midpoint = Math.ceil(textObjectsForPptx.length / 2);
+                pptxSlide.addText(textObjectsForPptx.slice(0, midpoint), { x: '5%', y: '20%', w: '44%', h: '75%', autoFit: true });
+                pptxSlide.addText(textObjectsForPptx.slice(midpoint), { x: '51%', y: '20%', w: '44%', h: '75%', autoFit: true });
+            } else {
+                const midpoint = Math.ceil(content.length / 2);
+                const colOpts = { ...bodyOpts, bullet: true, paraSpaceAfter: 10 };
+                // Increased spacing between columns slightly (43% width) to prevent visual bleeding
+                pptxSlide.addText(content.slice(0, midpoint).map(p => ({ text: p, options: colOpts })), { x: '5%', y: '20%', w: '43%', h: '75%', autoFit: true });
+                pptxSlide.addText(content.slice(midpoint).map(p => ({ text: p, options: colOpts })), { x: '52%', y: '20%', w: '43%', h: '75%', autoFit: true });
+            }
+            break;
+
+          case 'three_column':
+            pptxSlide.addText(slide.title, { ...titleOpts, x: '5%', y: '5%', w: '90%', h: '10%', align: 'center', autoFit: true });
+            const columns = [];
+            for (let i = 0; i < content.length; i += 2) {
+                if (content[i] !== undefined) columns.push({ title: content[i], text: content[i + 1] || '' });
+            }
+            columns.slice(0,3).forEach((col, i) => {
+              const xPos = 5 + (i * 31);
+              pptxSlide.addText(col.title, { ...titleOpts, fontSize: 18, x: `${xPos}%`, y: '20%', w: '28%', h: '10%', autoFit: true });
+              pptxSlide.addText(col.text, { ...bodyOpts, fontSize: 14, x: `${xPos}%`, y: '32%', w: '28%', h: '60%', autoFit: true });
+            });
+            break;
+
+          case 'quote':
+            pptxSlide.addText(`"${slide.title}"`, { ...titleOpts, fontSize: 32, x: '10%', y: '30%', w: '80%', h: '40%', align: 'center', valign: 'middle', italic: true, autoFit: true });
+            if (content.length > 0) {
+              pptxSlide.addText(`- ${content[0]}`, { ...bodyOpts, fontSize: 18, x: '10%', y: '70%', w: '80%', h: '10%', align: 'right', autoFit: true });
+            }
+            break;
+            
+          case 'image_full_bleed':
+             if (slide.imageUrl) {
+              try {
+                pptxSlide.addImage({ data: slide.imageUrl, sizing: { type: 'cover', w: '100%', h: '100%'} });
+                pptxSlide.addShape(pptx.shapes.RECTANGLE, { x: 0, y: 0, w: '100%', h: '100%', fill: { color: '000000', transparency: 50 } });
+              } catch (e) {
+                console.error("PPTX Export: Failed to add background or overlay for 'image_full_bleed'.", e);
+              }
+            }
+            pptxSlide.addText(slide.title, { ...titleOpts, color: 'FFFFFF', fontSize: 44, x: '5%', y: '40%', w: '90%', h: '15%', align: 'center', shadow: { type: 'outer', color: '000000', blur: 5, offset: 2, angle: 45 }, autoFit: true });
+             if (content.length > 0) {
+              pptxSlide.addText(content[0], { ...bodyOpts, color: 'FFFFFF', fontSize: 22, x: '5%', y: '55%', w: '90%', h: '10%', align: 'center', shadow: { type: 'outer', color: '000000', blur: 3, offset: 1, angle: 45 }, autoFit: true });
+            }
+            break;
+          
+          case 'timeline':
+          case 'company_timeline': {
+            pptxSlide.addText(slide.title, { ...titleOpts, x: 0.5, y: 0.1125, w: 9, h: 0.5625, align: 'center', autoFit: true });
+            try {
+              pptxSlide.addShape(pptx.shapes.LINE, { x: 5, y: 0.84375, w: 0, h: 4.5, line: { color: cleanColor(theme.primaryColor), width: 2 } });
+            } catch (e) {
+              console.error("PPTX Export: Failed to add main line for 'timeline'.", e);
+            }
+
+            const timelineItems = [];
+            for (let i = 0; i < content.length; i += 2) {
+              if (content[i] !== undefined) timelineItems.push({ title: content[i], text: content[i + 1] || '' });
+            }
+
+            if (timelineItems.length > 0) {
+              const yStep_in = 4.5 / timelineItems.length;
+              const startY_in = 0.84375;
+
+              timelineItems.forEach((item, i) => {
+                const ovalCenterY_in = startY_in + (i * yStep_in) + (yStep_in / 2);
+                const ovalSize_in = 0.2;
+
+                try {
+                  pptxSlide.addShape(pptx.shapes.OVAL, {
+                    x: 5 - (ovalSize_in / 2),
+                    y: ovalCenterY_in - (ovalSize_in / 2),
+                    w: ovalSize_in,
+                    h: ovalSize_in,
+                    fill: { color: cleanColor(theme.primaryColor) }
+                  });
+                } catch (e) {
+                  const errorMessage = `PPTX Export: Failed to add oval for timeline item ${i}.`;
+                  console.error(errorMessage, e);
+                  this.geminiService.error.set({ message: `${errorMessage}\n${(e as Error).message}`, reportable: true });
+                }
+
+                const isLeft = i % 2 === 0;
+                const textW_in = 4;
+                const textX_in = isLeft ? 0.5 : 5.5;
+                const textAlign = isLeft ? 'right' : 'left';
+                
+                const textBlockH_in = yStep_in * 0.8;
+                const textBlockY_in = ovalCenterY_in - (textBlockH_in / 2);
+
+                pptxSlide.addText(item.title, { ...titleOpts, fontSize: 16, x: textX_in, y: this.round(textBlockY_in), w: textW_in, h: this.round(textBlockH_in / 2), align: textAlign, valign: 'bottom', autoFit: true });
+                pptxSlide.addText(item.text, { ...bodyOpts, fontSize: 12, x: textX_in, y: this.round(textBlockY_in + (textBlockH_in / 2)), w: textW_in, h: this.round(textBlockH_in / 2), align: textAlign, valign: 'top', autoFit: true });
+              });
+            }
+            break;
+          }
+
+          case 'roadmap_horizontal': 
+          case 'step_flow':
+          case 'circular_flow': // Simplified as linear for PPTX
+          case 'arrow_process_flow':
+          case 'chevron_list':
+            // Horizontal layout logic
+            pptxSlide.addText(slide.title, { ...titleOpts, x: '5%', y: '5%', w: '90%', h: '10%', align: 'center', autoFit: true });
+            
+            const roadmapItems = [];
+            for(let i=0; i<content.length; i+=2) {
+                if(content[i]) roadmapItems.push({ title: content[i], text: content[i+1] || '' });
+            }
+            const count = Math.min(roadmapItems.length, 5); // Limit to 5 for fit
+            if(count > 0) {
+                const itemW = 80 / count;
+                // Draw connecting line
+                pptxSlide.addShape(pptx.shapes.LINE, { x: '10%', y: '35%', w: '80%', h: 0, line: { color: cleanColor(theme.primaryColor), width: 3 } });
+                
+                roadmapItems.slice(0, 5).forEach((item, i) => {
+                    const xPos = 10 + (i * itemW);
+                    const shapeType = normalizedLayout === 'chevron_list' ? pptx.shapes.CHEVRON : (normalizedLayout === 'arrow_process_flow' ? pptx.shapes.RIGHT_ARROW : pptx.shapes.OVAL);
+                    
+                    // Shape on the line
+                    pptxSlide.addShape(shapeType, { 
+                        x: `${xPos + itemW/2 - 2}%`, y: '33%', w: '4%', h: '4%', 
+                        fill: { color: cleanColor(theme.primaryColor) } 
+                    });
+                    
+                    // Title above
+                    pptxSlide.addText(item.title, { ...titleOpts, fontSize: 14, x: `${xPos}%`, y: '20%', w: `${itemW}%`, h: '10%', align: 'center', autoFit: true });
+                    // Text below
+                    pptxSlide.addText(item.text, { ...bodyOpts, fontSize: 12, x: `${xPos}%`, y: '40%', w: `${itemW}%`, h: '40%', align: 'center', autoFit: true });
+                });
+            }
+            break;
+
+          case 'process':
+            pptxSlide.addText(slide.title, { ...titleOpts, x: '5%', y: '5%', w: '90%', h: '10%', align: 'center', autoFit: true });
+            const processItemsRaw = [];
+            for (let i = 0; i < content.length; i += 2) {
+                if (content[i] !== undefined) processItemsRaw.push({ title: content[i], text: content[i + 1] || '' });
+            }
+            const processItems = processItemsRaw.slice(0, 5);
+            const totalItems = processItems.length;
+
+            if (totalItems > 0) {
+                let itemPositions: { x: number, w: number }[] = [];
+                let linePositions: { x: number, w: number }[] = [];
+
+                switch (totalItems) {
+                    case 1: itemPositions = [{ x: 40, w: 20 }]; break;
+                    case 2:
+                        itemPositions = [{ x: 20, w: 25 }, { x: 55, w: 25 }];
+                        linePositions = [{ x: 45, w: 10 }]; break;
+                    case 3:
+                        itemPositions = [{ x: 10, w: 20 }, { x: 40, w: 20 }, { x: 70, w: 20 }];
+                        linePositions = [{ x: 30, w: 10 }, { x: 60, w: 10 }]; break;
+                    case 4:
+                        itemPositions = [{ x: 5, w: 18 }, { x: 28, w: 18 }, { x: 51, w: 18 }, { x: 74, w: 18 }];
+                        linePositions = [{ x: 23, w: 5 }, { x: 46, w: 5 }, { x: 69, w: 5 }]; break;
+                    case 5:
+                        itemPositions = [{ x: 2, w: 15 }, { x: 22, w: 15 }, { x: 42, w: 15 }, { x: 62, w: 15 }, { x: 82, w: 15 }];
+                        linePositions = [{ x: 17, w: 5 }, { x: 37, w: 5 }, { x: 57, w: 5 }, { x: 77, w: 5 }]; break;
+                }
+
+                processItems.forEach((item, i) => {
+                    const pos = itemPositions[i];
+                    pptxSlide.addText(`${i + 1}`, { x: `${pos.x}%`, y: '30%', w: `${pos.w}%`, h: '10%', align: 'center', fontFace: theme.titleFont, fontSize: 24, color: cleanColor(theme.primaryColor), bold: true });
+                    pptxSlide.addText(item.title, { x: `${pos.x}%`, y: '45%', w: `${pos.w}%`, h: '10%', align: 'center', ...bodyOpts, bold: true, fontSize: 16, autoFit: true });
+                    pptxSlide.addText(item.text, { x: `${pos.x}%`, y: '60%', w: `${pos.w}%`, h: '30%', align: 'center', ...bodyOpts, fontSize: 12, autoFit: true });
+                });
+
+                linePositions.forEach(line => {
+                    try {
+                      pptxSlide.addShape(pptx.shapes.LINE, {
+                          x: `${line.x}%`, y: '35%', w: `${line.w}%`, h: 0,
+                          line: { color: cleanColor(theme.primaryColor), width: 2, dashType: 'dash' }
+                      });
+                    } catch(e) { 
+                      console.error("PPTX Export: Failed to add connecting line for 'process'.", e);
+                    }
+                });
+            }
+            break;
+            
+          case 'kpi_dashboard_three':
+          case 'stats_highlight':
+          case 'gauge_chart_three': // Map gauges to stats for simplicity in PPTX
+            pptxSlide.addText(slide.title, { ...titleOpts, x:'5%', y:'10%', w:'90%', h:'10%', align:'center', autoFit: true });
+            const kpiItemsRaw = [];
+            for (let i = 0; i < content.length; i += 2) {
+              if(content[i] !== undefined) kpiItemsRaw.push({ stat: content[i], label: content[i+1] || '' });
+            }
+            const maxKpis = normalizedLayout === 'kpi_dashboard_three' ? 3 : 4;
+            const kpiItems = kpiItemsRaw.slice(0, maxKpis);
+
+            if (kpiItems.length > 0) {
+              const kpiItemWidth = 22; // Adjusted width
+              const totalKpiWidth = kpiItems.length * kpiItemWidth;
+              const kpiGap = (100 - totalKpiWidth) / (kpiItems.length + 1);
+
+              kpiItems.forEach((item, i) => {
+                const xPos = kpiGap + (i * (kpiItemWidth + kpiGap));
+                pptxSlide.addText(item.stat, { ...titleOpts, fontSize: 48, x:`${xPos}%`, y:'40%', w:`${kpiItemWidth}%`, h:'20%', align:'center', autoFit: true });
+                pptxSlide.addText(item.label, { ...bodyOpts, fontSize: 16, x:`${xPos}%`, y:'60%', w:`${kpiItemWidth}%`, h:'10%', align:'center', autoFit: true });
+              });
+            }
+            break;
+
+          case 'agenda':
+          case 'key_takeaways':
+          case 'definition_list':
+          case 'checklist':
+          case 'numbered_list_large':
+            pptxSlide.addText(slide.title, { ...titleOpts, x:'10%', y:'10%', w:'80%', h:'10%', align:'center', autoFit: true });
+            const listItems = (normalizedLayout === 'definition_list') 
+              ? content.map((item, i) => (i % 2 === 0) 
+                  ? { text: item, options: { ...bodyOpts, bold: true, fontSize: 18, breakLine: true } }
+                  : { text: item, options: { ...bodyOpts, fontSize: 16, bullet: { indent: 30 }, breakLine: true, paraSpaceAfter: 10 } } )
+              : content.map(item => ({ text: item, options: { ...bodyOpts, bullet: true, fontSize: 20, paraSpaceAfter: 10 } }));
+            pptxSlide.addText(listItems, { x:'15%', y:'25%', w:'70%', h:'70%', autoFit: true });
+            break;
+
+          case 'table':
+          case 'data_table_highlight':
+            pptxSlide.addText(slide.title, { ...titleOpts, x: '5%', y: '2%', w: '90%', h: '10%', align: 'center', autoFit: true });
+            if (slide.tableData) {
+              const tableRows = slide.tableData.map((row, i) => {
+                return row.map(cell => ({ text: cell, options: i === 0 ? { ...bodyOpts, bold: true, fill: cleanColor(theme.primaryColor), color: 'FFFFFF' } : bodyOpts }));
+              });
+              pptxSlide.addTable(tableRows, { x: '10%', y: '15%', w: '80%', border: { type: 'solid', pt: 1, color: cleanColor(theme.primaryColor) }, autoPage: true, rowH: 0.4, fill: cleanColor(theme.backgroundColor), valign: 'middle' });
+            }
+            break;
+            
+          case 'alternating_feature_list':
+          case 'staggered_list':
+            pptxSlide.addText(slide.title, { ...titleOpts, x:'5%', y:'2%', w:'90%', h:'10%', align:'center', autoFit: true });
+            const altItems = [];
+            for (let i = 0; i < content.length; i += 2) {
+              if(content[i] !== undefined) altItems.push({ title: content[i], text: content[i+1] || '' });
+            }
+            if (altItems.length > 0) {
+                const yStepAlt = 85 / altItems.length;
+                altItems.slice(0, 4).forEach((item, i) => {
+                    const yPos = 15 + (i * yStepAlt);
+                    const isLeft = i % 2 === 0;
+                    pptxSlide.addText(item.title, { ...titleOpts, fontSize:20, x: isLeft ? '10%' : '50%', y: `${yPos}%`, w: '40%', h:'10%', align: isLeft ? 'left' : 'right', autoFit: true });
+                    pptxSlide.addText(item.text, { ...bodyOpts, x: isLeft ? '10%' : '50%', y: `${yPos + 5}%`, w: '40%', h:'10%', align: isLeft ? 'left' : 'right', autoFit: true });
+                });
+            }
+            break;
+
+          case 'cover_page_logo':
+            if (slide.imageUrl) {
+               pptxSlide.addImage({ data: slide.imageUrl, x: '42.5%', y: '20%', w: '15%', h: '20%', sizing: { type: 'contain', w: '15%', h: '20%' } });
+            }
+            pptxSlide.addText(slide.title, { ...titleOpts, fontSize: 48, x: '5%', y: '45%', w: '90%', h: '15%', align: 'center', autoFit: true });
+            if (content.length > 0) {
+              pptxSlide.addText(content[0], { ...bodyOpts, fontSize: 24, x: '5%', y: '60%', w: '90%', h: '10%', align: 'center', autoFit: true });
+            }
+            break;
+
+          case 'feature_list_icons':
+          case 'icon_grid_four':
+          case 'contact_information':
+            pptxSlide.addText(slide.title, { ...titleOpts, x: '5%', y: '5%', w: '90%', h: '10%', align: 'center', autoFit: true });
+            const iconItems = [];
+            for (let i = 0; i < content.length; i+=2) {
+              if (content[i] !== undefined) iconItems.push({ icon: content[i], text: content[i+1] || '' });
+            }
+            // Use bullet points as placeholders for icons in PPTX as dynamic icon injection is hard without external image service
+            const featureText = iconItems.map(item => ({ text: item.text, options: { ...bodyOpts, bullet: { code: '25CF' }, fontSize: 18, paraSpaceAfter: 10 } }));
+            pptxSlide.addText(featureText, { x: '15%', y: '20%', w: '70%', h: '75%', autoFit: true });
+            break;
+
+          case 'numbered_highlights_four':
+            pptxSlide.addText(slide.title, { ...titleOpts, x: '5%', y: '5%', w: '90%', h: '10%', align: 'center', autoFit: true });
+            const highlights = content.slice(0, 4);
+            const hlWidth = 22;
+            const hlGap = (100 - (highlights.length * hlWidth)) / (highlights.length + 1);
+            highlights.forEach((text, i) => {
+                const x = hlGap + (i * (hlWidth + hlGap));
+                pptxSlide.addText(`${i+1}`, { x: `${x}%`, y: '30%', w: `${hlWidth}%`, h: '15%', fontSize: 48, color: cleanColor(theme.primaryColor), bold: true, align: 'center' });
+                pptxSlide.addText(text, { ...bodyOpts, x: `${x}%`, y: '50%', w: `${hlWidth}%`, h: '30%', fontSize: 14, align: 'center', autoFit: true });
+            });
+            break;
+
+          case 'comparison':
+          case 'pros_and_cons':
+            pptxSlide.addText(slide.title, { ...titleOpts, x: '5%', y: '5%', w: '90%', h: '10%', align: 'center', autoFit: true });
+            const separatorIndex = content.indexOf('---');
+            const itemA = { title: content[0] || '', points: content.slice(1, separatorIndex > 0 ? separatorIndex : Math.ceil(content.length/2)) };
+            const itemB = { title: content[separatorIndex + 1] || '', points: content.slice(separatorIndex > 0 ? separatorIndex + 2 : Math.ceil(content.length/2)) };
+            pptxSlide.addText(itemA.title, { ...titleOpts, fontSize:22, x:'5%', y:'20%', w:'43%', h:'10%', align:'center', autoFit: true });
+            pptxSlide.addText(itemA.points.map(p => ({text:p, options: {...bodyOpts, bullet:true, paraSpaceAfter: 10}})), { x:'5%', y:'30%', w:'43%', h:'65%', autoFit: true });
+            pptxSlide.addText(itemB.title, { ...titleOpts, fontSize:22, x:'52%', y:'20%', w:'43%', h:'10%', align:'center', autoFit: true });
+            pptxSlide.addText(itemB.points.map(p => ({text:p, options: {...bodyOpts, bullet:true, paraSpaceAfter: 10}})), { x:'52%', y:'30%', w:'43%', h:'65%', autoFit: true });
+            break;
+
+          case 'swot':
+          case 'matrix_3x3': // Fallback to 2x2 style for simplicity in PPTX loop if exact matrix isn't needed
+          case 'quadrant_chart':
+            pptxSlide.addText(slide.title, { ...titleOpts, x: '5%', y: '2%', w: '90%', h: '8%', align: 'center', autoFit: true });
+            // Draw quadrant lines
+            pptxSlide.addShape(pptx.shapes.LINE, { x: '50%', y: '15%', w: 0, h: '80%', line: { color: cleanColor(theme.primaryColor), width: 2 } });
+            pptxSlide.addShape(pptx.shapes.LINE, { x: '5%', y: '55%', w: '90%', h: 0, line: { color: cleanColor(theme.primaryColor), width: 2 } });
+
+            const swotContent = (normalizedLayout === 'swot') 
+                ? [
+                    { title: content[0] || 'Strengths', text: content[1] || '' },
+                    { title: content[2] || 'Weaknesses', text: content[3] || '' },
+                    { title: content[4] || 'Opportunities', text: content[5] || '' },
+                    { title: content[6] || 'Threats', text: content[7] || '' }
+                  ]
+                : [
+                    { title: content[0] || 'Q1', text: content[1] || '' },
+                    { title: content[2] || 'Q2', text: content[3] || '' },
+                    { title: content[4] || 'Q3', text: content[5] || '' },
+                    { title: content[6] || 'Q4', text: content[7] || '' }
+                ];
+
+            const swotPositions = [
+                { x: '5%', y: '12%' }, { x: '52%', y: '12%' },
+                { x: '5%', y: '55%' }, { x: '52%', y: '55%' }
+            ];
+            swotPositions.forEach((pos, i) => {
+                if(swotContent[i]) {
+                    pptxSlide.addText(swotContent[i].title, { ...titleOpts, fontSize: 18, x: pos.x, y: pos.y, w: '43%', h: '8%', bold: true, align: 'center', autoFit: true });
+                    pptxSlide.addText(this.getContentArray(swotContent[i].text).map(p => ({ text: p, options: { ...bodyOpts, bullet: true, paraSpaceAfter: 5 }})), { x: pos.x, y: `${parseFloat(pos.y) + 8}%`, w: '43%', h: '35%', autoFit: true });
+                }
+            });
+            break;
+
+          case 'pyramid':
+          case 'funnel':
+            pptxSlide.addText(slide.title, { ...titleOpts, x: '5%', y: '5%', w: '90%', h: '10%', align: 'center', autoFit: true });
+            const items = content.slice(0, 5);
+            const itemCount = items.length;
+            const yStep = 80 / itemCount;
+            items.forEach((item, i) => {
+                const layerIndex = normalizedLayout === 'pyramid' ? (itemCount - 1 - i) : i;
+                const width = 60 - (layerIndex * 10);
+                const x = 50 - (width / 2);
+                const y = 15 + (i * yStep);
+                pptxSlide.addShape(pptx.shapes.TRAPEZOID, { x: `${x}%`, y: `${y}%`, w: `${width}%`, h: `${yStep}%`, fill: { color: cleanColor(theme.primaryColor), transparency: i * 15 } });
+                pptxSlide.addText(item, { ...bodyOpts, color: cleanColor(theme.backgroundColor), bold: true, x: `${x}%`, y: `${y}%`, w: `${width}%`, h: `${yStep}%`, align: 'center', valign: 'middle', autoFit: true });
+            });
+            break;
+
+          case 'radial_diagram':
+          case 'hub_and_spoke':
+          case 'mind_map':
+            pptxSlide.addText(slide.title, { ...titleOpts, x: '5%', y: '2%', w: '90%', h: '8%', align: 'center', autoFit: true });
+            const centerText = content[0] || 'Center';
+            const satellites = content.slice(1, 7);
+            const satelliteCount = satellites.length;
+
+            // Center circle
+            pptxSlide.addShape(pptx.shapes.OVAL, { x: '40%', y: '40%', w: '20%', h: '20%', fill: { color: cleanColor(theme.primaryColor) } });
+            pptxSlide.addText(centerText, { ...bodyOpts, color: cleanColor(theme.backgroundColor), bold: true, x: '40%', y: '40%', w: '20%', h: '20%', align: 'center', valign: 'middle', autoFit: true });
+
+            satellites.forEach((text, i) => {
+                const angle = (i / satelliteCount) * 2 * Math.PI;
+                const x = 50 + 35 * Math.cos(angle);
+                const y = 50 + 35 * Math.sin(angle);
+                pptxSlide.addShape(pptx.shapes.LINE, { x1: '50%', y1: '50%', x2: `${x}%`, y2: `${y}%`, line: { color: cleanColor(theme.primaryColor), width: 1, dashType: 'dash' } });
+                pptxSlide.addText(text, { ...bodyOpts, x: `${x-10}%`, y: `${y-5}%`, w: '20%', h: '10%', align: 'center', autoFit: true });
+            });
+            break;
+
+          case 'cycle_diagram':
+            pptxSlide.addText(slide.title, { ...titleOpts, x: '5%', y: '5%', w: '90%', h: '10%', align: 'center', autoFit: true });
+            const cycleItems = content.slice(0, 5);
+            const cycleCount = cycleItems.length;
+            const radius = 28; // Reduced slightly to avoid edge clipping
+            const centerY = 55; // Lowered center to avoid title overlap
+
+            cycleItems.forEach((text, i) => {
+              const angle = (i / cycleCount) * 2 * Math.PI - (Math.PI / 2); // Start from top
+              const x = 50 + radius * Math.cos(angle);
+              const y = centerY + (radius * (16/9)) * Math.sin(angle); // Aspect correction for positioning
+              
+              const bubbleW = 18;
+              const bubbleH = 25; // Adjusted height for text fit
+
+              pptxSlide.addShape(pptx.shapes.OVAL, { 
+                  x: `${x - bubbleW/2}%`, 
+                  y: `${y - bubbleH/2}%`, 
+                  w: `${bubbleW}%`, 
+                  h: `${bubbleH}%`, 
+                  fill: { color: cleanColor(theme.primaryColor) },
+                  line: { color: 'FFFFFF', width: 2 } // White border for fidelity
+              });
+              
+              pptxSlide.addText(text, { 
+                  ...bodyOpts, 
+                  color: cleanColor(theme.backgroundColor), // FIX: Contrast issue
+                  bold: true, 
+                  x: `${x - bubbleW/2 + 2}%`, 
+                  y: `${y - bubbleH/2 + 5}%`, 
+                  w: `${bubbleW - 4}%`, 
+                  h: `${bubbleH - 10}%`, 
+                  align: 'center', 
+                  valign: 'middle', 
+                  fontSize: 14, 
+                  autoFit: true 
+              });
+            });
+            break;
+
+          case 'image_grid_three':
+            // 1 Big left, 2 small right
+            pptxSlide.addText(slide.title, { ...titleOpts, x: '5%', y: '2%', w: '90%', h: '10%', align: 'center', autoFit: true });
+            if (slide.imageUrl) {
+                pptxSlide.addImage({ data: slide.imageUrl, x: '5%', y: '15%', w: '44%', h: '75%', sizing: { type: 'cover', w: '44%', h: '75%' } });
+                pptxSlide.addImage({ data: slide.imageUrl, x: '51%', y: '15%', w: '44%', h: '36%', sizing: { type: 'cover', w: '44%', h: '36%' } });
+                pptxSlide.addImage({ data: slide.imageUrl, x: '51%', y: '54%', w: '44%', h: '36%', sizing: { type: 'cover', w: '44%', h: '36%' } });
+            }
+            break;
+
+          case 'image_grid_four':
+            // 2x2 Grid
+            pptxSlide.addText(slide.title, { ...titleOpts, x: '5%', y: '2%', w: '90%', h: '10%', align: 'center', autoFit: true });
+            if (slide.imageUrl) {
+                pptxSlide.addImage({ data: slide.imageUrl, x: '5%', y: '15%', w: '44%', h: '36%', sizing: { type: 'cover', w: '44%', h: '36%' } });
+                pptxSlide.addImage({ data: slide.imageUrl, x: '51%', y: '15%', w: '44%', h: '36%', sizing: { type: 'cover', w: '44%', h: '36%' } });
+                pptxSlide.addImage({ data: slide.imageUrl, x: '5%', y: '54%', w: '44%', h: '36%', sizing: { type: 'cover', w: '44%', h: '36%' } });
+                pptxSlide.addImage({ data: slide.imageUrl, x: '51%', y: '54%', w: '44%', h: '36%', sizing: { type: 'cover', w: '44%', h: '36%' } });
+            }
+            break;
+
+          case 'image_grid_five':
+            // 1 Big Center, 4 surrounding? Or 3 top 2 bottom. Let's do 3 top 2 bottom.
+            pptxSlide.addText(slide.title, { ...titleOpts, x: '5%', y: '2%', w: '90%', h: '10%', align: 'center', autoFit: true });
+            if(slide.imageUrl) {
+                const w3 = 30; // ~90% / 3
+                const h2 = 36;
+                pptxSlide.addImage({ data: slide.imageUrl, x: '5%', y: '15%', w: `${w3}%`, h: `${h2}%`, sizing: { type: 'cover', w: `${w3}%`, h: `${h2}%` } });
+                pptxSlide.addImage({ data: slide.imageUrl, x: '36%', y: '15%', w: `${w3}%`, h: `${h2}%`, sizing: { type: 'cover', w: `${w3}%`, h: `${h2}%` } });
+                pptxSlide.addImage({ data: slide.imageUrl, x: '67%', y: '15%', w: `${w3}%`, h: `${h2}%`, sizing: { type: 'cover', w: `${w3}%`, h: `${h2}%` } });
+                
+                pptxSlide.addImage({ data: slide.imageUrl, x: '20%', y: '54%', w: `${w3}%`, h: `${h2}%`, sizing: { type: 'cover', w: `${w3}%`, h: `${h2}%` } });
+                pptxSlide.addImage({ data: slide.imageUrl, x: '52%', y: '54%', w: `${w3}%`, h: `${h2}%`, sizing: { type: 'cover', w: `${w3}%`, h: `${h2}%` } });
+            }
+            break;
+
+          case 'image_header_text_below':
+            if (slide.imageUrl) {
+                pptxSlide.addImage({ data: slide.imageUrl, x: '0', y: '0', w: '100%', h: '40%', sizing: { type: 'cover', w: '100%', h: '40%' } });
+            }
+            pptxSlide.addText(slide.title, { ...titleOpts, x: '5%', y: '45%', w: '90%', h: '15%', align: 'left', autoFit: true });
+            pptxSlide.addText(content.map(p => ({ text: p, options: { ...bodyOpts, bullet: true } })), { x: '5%', y: '60%', w: '90%', h: '35%', autoFit: true });
+            break;
+
+          // Chart Types
+          case 'chart_bar':
+          case 'chart_line':
+          case 'chart_pie':
+          case 'chart_doughnut':
+          case 'area_chart':
+          case 'chart_radar': // PptxGenJS supports Radar
+          case 'scatter_plot': // PptxGenJS supports Scatter
+          case 'bubble_chart': // PptxGenJS supports Bubble
+          case 'chart_heatmap': // Map to Bar if not supported, but let's try mapping logic
+          case 'chart_waterfall': // Map to Bar
+            pptxSlide.addText(slide.title, { ...titleOpts, x: '5%', y: '2%', w: '90%', h: '10%', align: 'center', autoFit: true });
+            if (slide.chartData) {
+                const chartTypes: {[key:string]: any} = {
+                    chart_bar: pptx.charts.BAR,
+                    chart_line: pptx.charts.LINE,
+                    chart_pie: pptx.charts.PIE,
+                    chart_doughnut: pptx.charts.DOUGHNUT,
+                    area_chart: pptx.charts.AREA,
+                    chart_radar: pptx.charts.RADAR,
+                    scatter_plot: pptx.charts.SCATTER,
+                    bubble_chart: pptx.charts.BUBBLE,
+                    // Fallbacks for types not natively identical in PptxGenJS or complex configuration
+                    chart_heatmap: pptx.charts.BAR, 
+                    chart_waterfall: pptx.charts.BAR,
+                    gauge_chart_three: pptx.charts.DOUGHNUT
+                };
+                
+                // Ensure chart type exists
+                const selectedType = chartTypes[normalizedLayout] || pptx.charts.BAR;
+
+                const pptxChartData = slide.chartData.datasets.map(ds => ({
+                    name: ds.label,
+                    labels: slide.chartData?.labels,
+                    values: ds.data
+                }));
+                
+                pptxSlide.addChart(selectedType, pptxChartData, { 
+                  x: '10%', y: '15%', w: '80%', h: '80%', 
+                  valAxisColor: cleanColor(theme.textColor),
+                  catAxisColor: cleanColor(theme.textColor),
+                  dataLabelColor: cleanColor(theme.textColor),
+                  legendColor: cleanColor(theme.textColor),
+                  legendPos: 'b',
+                  showLegend: true
+                });
+            }
+            break;
+
+          default:
+            pptxSlide.addText(slide.title, { ...titleOpts, x: '5%', y: '5%', w: '90%', h: '10%', autoFit: true });
+            pptxSlide.addText(content.map(p => ({ text: p, options: { ...bodyOpts, bullet: true } })), { x: '5%', y: '20%', w: '90%', h: '75%', autoFit: true });
+            if (slide.imageUrl) {
+              pptxSlide.addImage({ data: slide.imageUrl, x: '65%', y: '25%', w: '30%', h: '50%', sizing: { type: 'contain', w: '30%', h: '50%' } });
+            }
+        }
+
+        if (slide.speakerNotes) {
+          const notes = Array.isArray(slide.speakerNotes) ? slide.speakerNotes.join('\n\n') : slide.speakerNotes;
+          pptxSlide.addNotes(notes);
+        }
+      }
+
+      await pptx.writeFile({ fileName: `${pres.title}.pptx` });
     } catch (e) {
-        this.geminiService.error.set(`Failed to generate PPTX: ${(e as Error).message}`);
+      this.geminiService.error.set({ message: `Failed to generate PPTX: ${(e as Error).message}`, reportable: true });
     } finally {
-        this.downloadState.set('idle');
+      this.downloadState.set('idle');
     }
   }
 
@@ -1108,15 +1695,15 @@ export class PresentationEditorComponent {
     if (!pres || typeof jspdf === 'undefined' || typeof html2canvas === 'undefined') return;
     this.isDownloadMenuOpen.set(false);
     this.downloadState.set('pdf');
+    const originalIndex = this.currentSlideIndex();
     try {
       const { jsPDF } = jspdf;
       const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: 'a4' });
       const slideHostEl = document.querySelector('app-presentation-editor .w-full.max-w-7xl.aspect-\\[16\\/9\\]');
       if (!slideHostEl) throw new Error('Could not find slide element to capture.');
-      const originalIndex = this.currentSlideIndex();
       for (let i = 0; i < pres.slides.length; i++) {
-        this.selectSlide(i);
-        await new Promise(res => setTimeout(res, 500));
+        this.selectSlideForExport(i);
+        await new Promise(res => setTimeout(res, 100));
         const canvas = await html2canvas(slideHostEl as HTMLElement, { scale: 2, useCORS: true });
         const imgData = canvas.toDataURL('image/jpeg', 0.8);
         const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -1124,9 +1711,12 @@ export class PresentationEditorComponent {
         if (i > 0) pdf.addPage();
         pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
       }
-      this.selectSlide(originalIndex);
       pdf.save(`${pres.title}.pdf`);
-    } catch (e) { this.geminiService.error.set(`Failed to generate PDF: ${(e as Error).message}`); } finally { this.downloadState.set('idle'); }
+    } catch (e) { this.geminiService.error.set({ message: `Failed to generate PDF: ${(e as Error).message}`, reportable: true }); } 
+    finally { 
+      this.selectSlide(originalIndex);
+      this.downloadState.set('idle'); 
+    }
   }
 
   private async downloadAsPngZip(): Promise<void> {
@@ -1134,25 +1724,28 @@ export class PresentationEditorComponent {
     if (!pres || typeof html2canvas === 'undefined' || typeof JSZip === 'undefined') return;
     this.isDownloadMenuOpen.set(false);
     this.downloadState.set('png');
+    const originalIndex = this.currentSlideIndex();
     try {
       const zip = new JSZip();
       const slideHostEl = document.querySelector('app-presentation-editor .w-full.max-w-7xl.aspect-\\[16\\/9\\]');
       if (!slideHostEl) throw new Error('Could not find slide element to capture.');
-      const originalIndex = this.currentSlideIndex();
       for (let i = 0; i < pres.slides.length; i++) {
-        this.selectSlide(i);
-        await new Promise(res => setTimeout(res, 500));
+        this.selectSlideForExport(i);
+        await new Promise(res => setTimeout(res, 100));
         const canvas = await html2canvas(slideHostEl as HTMLElement, { useCORS: true });
         zip.file(`slide_${String(i+1).padStart(2, '0')}.png`, canvas.toDataURL('image/png').split(',')[1], { base64: true });
       }
-      this.selectSlide(originalIndex);
       const content = await zip.generateAsync({ type: 'blob' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(content);
       link.download = `${pres.title}_slides.zip`;
       link.click();
       URL.revokeObjectURL(link.href);
-    } catch (e) { this.geminiService.error.set(`Failed to generate PNGs: ${(e as Error).message}`); } finally { this.downloadState.set('idle'); }
+    } catch (e) { this.geminiService.error.set({ message: `Failed to generate PNGs: ${(e as Error).message}`, reportable: true }); } 
+    finally { 
+      this.selectSlide(originalIndex);
+      this.downloadState.set('idle'); 
+    }
   }
 
   private downloadAsTxt(): void {
@@ -1173,6 +1766,6 @@ export class PresentationEditorComponent {
       link.download = `${pres.title}_notes.txt`;
       link.click();
       URL.revokeObjectURL(link.href);
-    } catch (e) { this.geminiService.error.set(`Failed to generate TXT: ${(e as Error).message}`); } finally { this.downloadState.set('idle'); }
+    } catch (e) { this.geminiService.error.set({ message: `Failed to generate TXT: ${(e as Error).message}`, reportable: true }); } finally { this.downloadState.set('idle'); }
   }
 }

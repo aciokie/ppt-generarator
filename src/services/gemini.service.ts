@@ -13,7 +13,7 @@ export type PresentationStreamEvent =
 @Injectable({ providedIn: 'root' })
 export class GeminiService {
   private ai: GoogleGenAI | null = null;
-  public error = signal<string | null>(null);
+  public error = signal<{ message: string; reportable: boolean } | null>(null);
   
   private activeGenerations = signal(0);
   public readonly isGenerating = computed(() => this.activeGenerations() > 0);
@@ -27,6 +27,7 @@ export class GeminiService {
     reject: (reason?: any) => void
   }> = [];
   private isProcessingImageServiceQueue = false;
+  private imageGenerationDisabled = signal(false); // NEW: Circuit breaker for image generation
   // --- END: Image Generation Queue ---
 
   constructor() {
@@ -38,8 +39,15 @@ export class GeminiService {
     } catch(e) {
       const err = e as Error;
       console.error("Failed to initialize GoogleGenAI:", err.message);
-      this.error.set(`Failed to initialize AI Service. Please ensure the API key is configured correctly. Details: ${err.message}`);
+      this.error.set({ 
+        message: `Failed to initialize AI Service. Please ensure the API key is configured correctly. Details: ${err.message}`,
+        reportable: false 
+      });
     }
+  }
+
+  public getApiKey(): string {
+    return process.env.API_KEY!;
   }
 
   private slideSchema = {
@@ -49,18 +57,24 @@ export class GeminiService {
       content: { type: Type.ARRAY, items: { type: Type.STRING } },
       imagePrompt: { type: Type.STRING },
       layout: { type: Type.STRING, enum: [
-        'title', 'content_left', 'content_right', 'section_header', 'conclusion', 'two_column', 
-        'three_column', 'quote', 'image_full_bleed', 'table', 'chart_bar', 'chart_line', 
-        'chart_pie', 'chart_doughnut', 'timeline', 'process', 'stats_highlight', 'pyramid', 
-        'funnel', 'swot', 'comparison', 'team_members_four', 'radial_diagram', 'step_flow', 
+        'title', 'content_left', 'content_right', 'section_header', 'conclusion', 'two_column',
+        'three_column', 'quote', 'image_full_bleed', 'table', 'chart_bar', 'chart_line',
+        'chart_pie', 'chart_doughnut', 'timeline', 'process', 'stats_highlight', 'pyramid',
+        'funnel', 'swot', 'comparison', 'team_members_four', 'radial_diagram', 'step_flow',
         'image_overlap_left', 'hub_and_spoke', 'cycle_diagram', 'venn_diagram', 'alternating_feature_list',
-        'quadrant_chart', 'bridge_chart', 'gantt_chart_simple', 'org_chart', 'mind_map', 
+        'quadrant_chart', 'bridge_chart', 'gantt_chart_simple', 'org_chart', 'mind_map',
         'fishbone_diagram', 'area_chart', 'scatter_plot', 'bubble_chart', 'image_grid_four',
         'image_with_caption_below', 'text_over_image', 'quote_with_image', 'feature_highlight_image',
         'image_collage', 'image_focus_left', 'image_focus_right', 'checklist', 'numbered_list_large',
         'step_flow_vertical', 'circular_flow', 'staggered_list', 'feature_list_icons', 'pros_and_cons',
         'kpi_dashboard_three', 'kpi_dashboard_four', 'target_vs_actual', 'faq', 'call_to_action',
-        'world_map_pins'
+        'world_map_pins',
+        // New Layouts
+        'chart_radar', 'chart_heatmap', 'chart_waterfall', 'data_table_highlight', 'gauge_chart_three', 'progress_bar_list',
+        'roadmap_horizontal', 'roadmap_vertical', 'matrix_3x3', 'gear_diagram', 'arrow_process_flow', 'diverging_arrows', 'converging_arrows', 'chevron_list', 'project_dashboard',
+        'image_grid_three', 'image_grid_five', 'image_carousel_mockup', 'image_with_side_bullets', 'image_before_after', 'device_mockup_phone', 'device_mockup_laptop', 'image_header_text_below', 'cover_page_logo',
+        'agenda', 'speaker_introduction', 'testimonial_single', 'testimonial_three', 'definition_list', 'icon_grid_four', 'key_takeaways', 'numbered_highlights_four',
+        'contact_information', 'thank_you', 'next_steps', 'word_cloud', 'statement', 'company_timeline', 'chapter_divider', 'matrix_2x2', 'image_with_hotspots', 'bento_grid', 'diagonal_flow', 'split_33_66', 'impact'
       ] },
       speakerNotes: { type: Type.ARRAY, items: { type: Type.STRING } },
       animation: { type: Type.STRING, enum: ['none', 'fadeIn', 'flyIn', 'wipe', 'zoomIn'], description: "Animation style for the slide in PowerPoint." },
@@ -151,14 +165,13 @@ export class GeminiService {
     highQuality: boolean
   ): AsyncGenerator<PresentationStreamEvent, void, unknown> {
     if (!this.ai) {
-      this.error.set("AI Service is not initialized.");
+      this.error.set({ message: "AI Service is not initialized.", reportable: false });
       return;
     }
 
     this.activeGenerations.update(c => c + 1);
     this.error.set(null);
     
-    // FIX: Added `await` because `getCorePrompt` is an async function that returns a Promise.
     let prompt = await this.aiEvolutionService.getCorePrompt();
 
     prompt = prompt
@@ -302,7 +315,7 @@ export class GeminiService {
     } catch (e) {
       const err = e as Error;
       console.error('Error generating presentation:', err);
-      this.error.set(`An error occurred during generation: ${err.message}`);
+      this.error.set({ message: `An error occurred during generation: ${err.message}`, reportable: true });
     } finally {
       this.activeGenerations.update(c => c - 1);
     }
@@ -315,14 +328,13 @@ export class GeminiService {
     originalTopic: string
   ): AsyncGenerator<PresentationStreamEvent, void, unknown> {
     if (!this.ai) {
-      this.error.set("AI Service is not initialized.");
+      this.error.set({ message: "AI Service is not initialized.", reportable: false });
       return;
     }
 
     this.activeGenerations.update(c => c + 1);
     this.error.set(null);
 
-    // FIX: Added `await` because `getCorePrompt` is an async function that returns a Promise.
     let prompt = await this.aiEvolutionService.getCorePrompt();
 
     const documentContext = `
@@ -452,38 +464,44 @@ ${documentText}
     } catch (e) {
       const err = e as Error;
       console.error('Error generating presentation from document:', err);
-      this.error.set(`An error occurred during generation: ${err.message}`);
+      this.error.set({ message: `An error occurred during generation: ${err.message}`, reportable: true });
     } finally {
       this.activeGenerations.update(c => c - 1);
     }
   }
 
   private async _processImageServiceQueue(): Promise<void> {
-    if (this.isProcessingImageServiceQueue || this.imageRequestQueue.length === 0) {
+    if (this.isProcessingImageServiceQueue) {
         return;
     }
     this.isProcessingImageServiceQueue = true;
 
-    const { task, resolve, reject } = this.imageRequestQueue.shift()!;
-    
-    try {
-        const result = await task();
-        resolve(result);
-    } catch (e) {
-        reject(e);
-    } finally {
-        // Wait AFTER each task to respect rate limits before starting the next.
-        // 5 RPM for Imagen means one request every 12 seconds. 15s is safer.
-        if (this.imageRequestQueue.length > 0) {
-             await new Promise(res => setTimeout(res, 15000));
+    while (this.imageRequestQueue.length > 0) {
+        const request = this.imageRequestQueue[0];
+        try {
+            const result = await request.task();
+            request.resolve(result);
+        } catch (e) {
+            request.reject(e);
+        } finally {
+            this.imageRequestQueue.shift();
         }
-        this.isProcessingImageServiceQueue = false;
-        // Process next item in the queue
-        this._processImageServiceQueue();
+        
+        if (this.imageRequestQueue.length > 0) {
+            // Wait AFTER each task to respect rate limits before starting the next.
+            // 5 RPM for Imagen is 1 request every 12 seconds. 15s is safer.
+            await new Promise(res => setTimeout(res, 15000));
+        }
     }
+
+    this.isProcessingImageServiceQueue = false;
   }
 
   generateImageFromPrompt(prompt: string, imageStyle: string, aspectRatio: string): Promise<string | null> {
+    if (this.imageGenerationDisabled()) {
+      console.warn("Image generation is disabled due to quota exhaustion. Request ignored.");
+      return Promise.resolve(null);
+    }
     return new Promise((resolve, reject) => {
         // The task is the actual API call logic, which will be executed by the queue processor.
         const task = () => this._performImageGeneration(prompt, imageStyle, aspectRatio);
@@ -494,7 +512,7 @@ ${documentText}
 
   private async _performImageGeneration(prompt: string, imageStyle: string, aspectRatio: string): Promise<string | null> {
     if (!this.ai) {
-      this.error.set("AI Service is not initialized.");
+      this.error.set({ message: "AI Service is not initialized.", reportable: false });
       return null;
     }
     
@@ -503,8 +521,8 @@ ${documentText}
 
     const maxRetries = 3;
     let attempt = 0;
-    // Increased initial delay and added jitter to avoid thundering herd on retries.
-    let delay = 5000 + Math.random() * 1000;
+    // Increased initial delay for rate limiting.
+    let delay = 15000 + Math.random() * 2000;
 
     try {
       while (attempt < maxRetries) {
@@ -526,12 +544,32 @@ ${documentText}
           return null; // Successful call but no image
         } catch (e) {
           const err = e as any;
-          const isRateLimitError = err?.error?.status === 'RESOURCE_EXHAUSTED';
-          // Check for the specific 500 Internal error from the API
-          const isServerError = err?.error?.code === 500 && err?.error?.status === 'INTERNAL';
+          
+          let errorContent = '';
+          try {
+            // Prioritize a string message, otherwise stringify the whole thing.
+            errorContent = (err.message && typeof err.message === 'string') ? err.message : JSON.stringify(err);
+          } catch {
+            // Fallback for circular references or other stringify errors.
+            errorContent = String(e);
+          }
+          
+          const isRateLimitError = errorContent.includes('RESOURCE_EXHAUSTED') || errorContent.includes('429');
+          const isServerError = errorContent.includes('500') && errorContent.includes('INTERNAL');
 
-          if ((isRateLimitError || isServerError) && attempt < maxRetries - 1) {
-              console.warn(`Image generation failed on attempt ${attempt + 1} with a retryable error (${err?.error?.status}). Retrying in ${delay / 1000}s...`);
+          if (isRateLimitError) {
+              console.error("Image generation quota exhausted. Disabling for this session.");
+              this.imageGenerationDisabled.set(true);
+              this.imageRequestQueue = []; // Clear the queue to prevent further attempts
+              this.error.set({ 
+                message: "Image generation daily quota has been reached. No more images will be generated in this session.",
+                reportable: false 
+              });
+              throw e; // Fail the current promise immediately and stop retries.
+          }
+
+          if ((isServerError) && attempt < maxRetries - 1) {
+              console.warn(`Image generation failed on attempt ${attempt + 1} with a retryable error. Retrying in ${delay / 1000}s...`);
               await new Promise(res => setTimeout(res, delay));
               delay *= 2; // Exponential backoff
               attempt++;
@@ -541,10 +579,14 @@ ${documentText}
         }
       }
     } catch (e) {
-      const err = e as any;
-      const message = err?.message || JSON.stringify(err);
-      console.error('Error generating image:', err);
-      this.error.set(`Failed to generate image: ${message}`);
+      // The rate limit error is handled inside the loop now and re-thrown.
+      // This outer catch will see it. We should avoid setting a generic error if the specific one is already set.
+      if (!this.imageGenerationDisabled()) {
+        const err = e as any;
+        const message = err?.message || JSON.stringify(err);
+        console.error('Error generating image:', err);
+        this.error.set({ message: `Failed to generate image: ${message}`, reportable: true });
+      }
       return null;
     } finally {
         this.activeGenerations.update(c => c - 1);
@@ -553,47 +595,105 @@ ${documentText}
     return null; // Should not be reached
   }
 
+  async suggestAspectRatio(slideTitle: string, slideContent: string | string[], imagePrompt: string): Promise<string> {
+    if (!this.ai) { return '16:9'; } // Default on failure
+    this.activeGenerations.update(c => c + 1);
+    this.error.set(null);
+    const prompt = `You are a professional graphic designer and art director. Your task is to determine the optimal aspect ratio for an image on a presentation slide.
+
+    **Context:**
+    - Slide Title: "${slideTitle}"
+    - Slide Content: ${Array.isArray(slideContent) ? slideContent.join(', ') : slideContent}
+    - Image Prompt: "${imagePrompt}"
+
+    **Available Aspect Ratios:**
+    - 16:9 (widescreen, cinematic, landscape)
+    - 4:3 (standard, balanced)
+    - 1:1 (square, good for portraits or centered objects)
+    - 3:4 (portrait, vertical emphasis)
+    - 9:16 (tall portrait, mobile-like)
+
+    **Instructions:**
+    Analyze the image prompt and the slide content. Choose the single best aspect ratio from the list above that would best fit the described image and its role on the slide.
+
+    - For landscapes, wide scenes, or groups, prefer '16:9'.
+    - For portraits of people or tall objects, prefer '3:4' or '9:16'.
+    - For centered subjects or abstract concepts, '1:1' can be effective.
+    - '4:3' is a safe, standard choice.
+
+    Your response MUST be ONLY the chosen aspect ratio string (e.g., "16:9"). Do not provide any explanation or other text.`;
+
+    try {
+      const response = await this.ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: { thinkingConfig: { thinkingBudget: 0 } }
+      });
+      const suggestedRatio = response.text.trim();
+      const validRatios = ['16:9', '4:3', '1:1', '3:4', '9:16'];
+      if (validRatios.includes(suggestedRatio)) {
+        return suggestedRatio;
+      }
+      console.warn(`AI suggested an invalid aspect ratio: "${suggestedRatio}". Falling back to 16:9.`);
+      return '16:9'; // Fallback
+    } catch (e) {
+      this.error.set({ message: `Failed to suggest aspect ratio: ${(e as Error).message}`, reportable: true });
+      return '16:9'; // Default on error
+    } finally {
+      this.activeGenerations.update(c => c - 1);
+    }
+  }
+
   async improveImagePrompt(title: string, content: string | string[], originalPrompt: string): Promise<string | null> {
     if (!this.ai) { return null; }
     this.activeGenerations.update(c => c + 1);
     this.error.set(null);
-    const prompt = `You are a world-class creative director and prompt engineer for a photorealistic AI image generator. Your task is to take a user's basic prompt and radically enhance it to produce a unique, captivating, and professional image for a presentation slide.
+    const prompt = `You are "Helios," a world-class AI art director and prompt engineer. Your mission is to transform a basic user idea into a masterpiece-level prompt for a state-of-the-art photorealistic AI image generator.
 
-    **Context:**
-    - Slide Title: "${title}"
-    - Slide Content: ${Array.isArray(content) ? content.map(c => `- ${c}`).join('\n') : content}
+    **Slide Context:**
+    - Title: "${title}"
+    - Content: ${Array.isArray(content) ? content.map(c => `- ${c}`).join('\n') : content}
 
-    **User's Original Prompt:**
+    **User's Original Idea:**
     "${originalPrompt}"
 
-    **CRITICAL Instructions:**
-    1.  **Deep Analysis:** Don't just rephrase. Analyze the slide's title and content to understand the core message, the underlying theme, and the emotional tone (e.g., innovative, serious, optimistic). Your new prompt MUST reflect this deeper context.
-    
-    2.  **Artistic Style & Composition:** Elevate the prompt by defining a specific artistic direction.
-        -   **Inject a Unique Style:** Suggest evocative styles. Consider: 'minimalist 3D render', 'abstract data visualization', 'vintage photo from the 1980s', 'double exposure photography', 'blueprint schematic', 'ethereal watercolor painting', 'detailed isometric scene', 'shot in the style of Annie Leibovitz'. Choose a style that *enhances* the slide's message.
-        -   **Define the Shot:** Describe the scene with cinematic language. Specify camera angles ('low-angle shot', 'dutch angle', 'macro shot'), lighting ('soft morning light', 'dramatic rim lighting', 'neon glow'), and composition ('rule of thirds', 'dynamic and energetic', 'symmetrical balance').
-    
-    3.  **Add Rich Detail:** Weave in specific, descriptive keywords based on the slide's content to build a full, complex scene. Describe the environment, the mood, and the subject with precision.
+    **CRITICAL INSTRUCTIONS - THE HELIOS METHOD:**
 
-    4.  **Strict Prohibitions:**
-        -   **No Generic Styles:** Avoid simple terms like 'illustration' or 'vector' unless it's a specific, advanced style like 'minimalist line art illustration'. The primary goal is realism and sophistication.
-        -   **Absolutely No Text:** The prompt MUST explicitly state that the final image should contain "no text, no words, no letters".
+    1.  **Conceptual Leap - The Visual Metaphor (MOST IMPORTANT):**
+        -   DO NOT just illustrate the user's idea literally. Your primary, most critical goal is to invent a powerful **visual metaphor** that represents the slide's core message.
+        -   Analyze the title and content to find the underlying concept (e.g., "growth," "connection," "security," "complexity").
+        -   Translate that concept into a unique, sophisticated visual. For "growth," think "a tiny sapling breaking through a concrete floor," not just "an arrow pointing up." For "security," think "a glowing, intricate digital lock mechanism," not "a padlock."
 
-    5.  **Final Output:** Return ONLY the improved prompt as a single, raw string. Do not add any explanations, conversational text, or markdown formatting.
+    2.  **Evoke Emotion and Sensory Detail:**
+        -   Be descriptive. Use vivid language to describe textures, lighting, atmosphere, and the overall "feel" of the scene.
+        -   What is the mood? Is it optimistic and bright, or mysterious and moody?
+        -   Think about sensory details: the glint of light on chrome, the texture of rough stone, the haze of a foggy morning.
+
+    3.  **Advanced Artistic Direction:**
+        -   Define a specific, professional artistic style. Examples: 'dramatic chiaroscuro lighting', 'shot with an 85mm portrait lens', 'bioluminescent macro photography', 'clean isometric 3D render', 'sleek corporate futurism', 'analogous color scheme', 'golden hour lighting', 'vaporwave aesthetic'.
+        -   Use cinematic language to describe the shot: camera angle ('extreme low-angle shot'), lens ('telephoto lens with bokeh'), composition ('asymmetrical balance', 'rule of thirds').
+
+    4.  **The Final Polish - Quality Boosters & Negative Prompts:**
+        -   **Quality Boosters:** Your final prompt MUST include a set of keywords that push the image generator towards the highest quality. Examples: \`photorealistic, hyper-detailed, 8K, cinematic lighting, professional color grading, sharp focus\`.
+        -   **Negative Prompts (Crucial):** Your final prompt MUST end with a strong negative prompt to avoid common image generation failures. It should ALWAYS include keywords like: \`ugly, blurry, deformed, distorted, poor quality, watermark, text, words, letters, signature, amateur\`.
+
+    5.  **Final Output:**
+        -   Return ONLY the improved prompt as a single, raw string.
+        -   Do not add any explanations, conversational text, or markdown formatting.
 
     **Example Transformation:**
     - Title: "The Core Technology"
     - Content: ["Utilizes quantum entanglement for data processing."]
-    - Original Prompt: "a quantum computer"
-    - **Your Improved Prompt Output:** "Cinematic, photorealistic shot of a glowing, intricate quantum computer core. Interconnected light trails pulse with energy inside a dark, clean-room environment. Dramatic, high-contrast lighting emphasizes the complex machinery. Focus on the central processing unit, shallow depth of field. No text, no words, no letters."
+    - Original Idea: "a quantum computer"
+    - **Your Masterpiece Prompt Output:** "A cinematic, photorealistic macro shot of a glowing, intricate quantum computer core. Ethereal light trails representing entangled particles pulse with energy inside a dark, sterile clean-room. Dramatic, high-contrast chiaroscuro lighting emphasizes the impossibly complex machinery. Shot on a 100mm macro lens, shallow depth of field. 8K, hyper-detailed, professional color grading, sharp focus. ugly, blurry, deformed, distorted, poor quality, watermark, text, words, letters, signature, amateur."
 
-    Now, transform the user's prompt.`;
+    Now, transform the user's idea into a masterpiece prompt.`;
 
     try {
         const response = await this.ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
         return response.text.trim();
     } catch(e) {
-        this.error.set(`Failed to improve image prompt: ${(e as Error).message}`);
+        this.error.set({ message: `Failed to improve image prompt: ${(e as Error).message}`, reportable: true });
         return null;
     } finally {
         this.activeGenerations.update(c => c - 1);
@@ -632,7 +732,7 @@ CRITICAL: Your entire response MUST be a single, raw JSON array of plain text st
         const notes = JSON.parse(response.text);
         return this.processAndStripMarkdown(notes);
     } catch(e) {
-        this.error.set(`Failed to generate speaker notes: ${(e as Error).message}`);
+        this.error.set({ message: `Failed to generate speaker notes: ${(e as Error).message}`, reportable: true });
         return null;
     } finally {
         this.activeGenerations.update(c => c - 1);
@@ -654,7 +754,7 @@ CRITICAL: Return only the resulting plain text in ${language}. Do not include an
         });
         return this.stripMarkdown(response.text);
     } catch(e) {
-        this.error.set(`Failed to improve content: ${(e as Error).message}`);
+        this.error.set({ message: `Failed to improve content: ${(e as Error).message}`, reportable: true });
         return null;
     } finally {
         this.activeGenerations.update(c => c - 1);
@@ -696,12 +796,12 @@ CRITICAL: Return only the resulting plain text in ${language}. Do not include an
         });
         const improvedPoints = JSON.parse(response.text) as string[];
         if (improvedPoints.length !== points.length) {
-            console.warn('AI returned a different number of bullet points. Using original.');
-            return points;
+          console.warn('AI returned a different number of bullet points. Discarding result.');
+          return null;
         }
         return this.processAndStripMarkdown(improvedPoints);
-    } catch(e) {
-        this.error.set(`Failed to improve bullet points: ${(e as Error).message}`);
+    } catch (e) {
+        this.error.set({ message: `Failed to improve bullet points: ${(e as Error).message}`, reportable: true });
         return null;
     } finally {
         this.activeGenerations.update(c => c - 1);
@@ -712,25 +812,145 @@ CRITICAL: Return only the resulting plain text in ${language}. Do not include an
     if (!this.ai) { return null; }
     this.activeGenerations.update(c => c + 1);
     this.error.set(null);
-    
-    let instruction = `rewrite a speaker's script for a slide to be more engaging and impactful. Enhance the text by adding compelling details, rhetorical questions for the audience, or powerful statistics/anecdotes, speaking directly to the audience.`;
-    if (mode === 'shorten') {
-      instruction = `shorten a speaker's script for a slide. Make the points more concise and punchy while speaking directly to the audience.`;
-    } else if (mode === 'lengthen') {
-      instruction = `expand and lengthen a speaker's script for a slide. Elaborate on each point, provide deeper explanations, and add more supporting details or examples, all while speaking directly to the audience.`;
-    }
 
-    const prompt = `You are an expert public speaker and speechwriter. Your task is to ${instruction}
-    The tone should be conversational, engaging, and directly address the audience.
-    Maintain the same number of notes as the input.
-    CRITICAL: The output MUST be in ${language}.
+    let instruction = 'rewrite the following speaker notes to be more engaging and conversational. Add rhetorical questions and more direct address to the audience.';
+    if (mode === 'shorten') {
+      instruction = 'condense and shorten the following speaker notes. Make them more like brief talking points rather than a full script.';
+    } else if (mode === 'lengthen') {
+      instruction = 'expand and lengthen the following speaker notes. Add more detail, examples, or a short anecdote to make them more comprehensive.';
+    }
+    
+    const prompt = `You are an expert speechwriter. Your task is to ${instruction}
 
     Slide Title (for context): "${slideTitle}"
-    
+
     Speaker notes to process:
     ${JSON.stringify(notes)}
 
-    CRITICAL: Your entire response MUST be a single, raw JSON array of strings. Do not include any conversational text or markdown formatting (like '''json). The strings inside the array must also be plain text with no markdown.`;
+    CRITICAL: Your entire response MUST be a single, raw JSON array of strings, where each string is a paragraph. Do not include any conversational text or markdown formatting (like '''json). The strings must also be plain text.`;
+    
+    try {
+        const response = await this.ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: 'application/json',
+                responseSchema: { type: Type.ARRAY, items: { type: Type.STRING } },
+                thinkingConfig: { thinkingBudget: 0 }
+            }
+        });
+        const improvedNotes = JSON.parse(response.text);
+        return this.processAndStripMarkdown(improvedNotes);
+    } catch(e) {
+        this.error.set({ message: `Failed to improve speaker notes: ${(e as Error).message}`, reportable: true });
+        return null;
+    } finally {
+        this.activeGenerations.update(c => c - 1);
+    }
+  }
+
+  async regenerateSlide(slide: Slide, presentationContext: Presentation): Promise<Slide | null> {
+    if (!this.ai) { return null; }
+    this.activeGenerations.update(c => c + 1);
+    this.error.set(null);
+
+    const prompt = `You are Agnes AI, an expert presentation designer inspired by Gamma.app. Your task is to REFINE and REGENERATE a single slide to be modern, visually balanced, and low-density.
+
+**Full Presentation Context:**
+- Title: ${presentationContext.title}
+- Original Topic: ${presentationContext.originalTopic}
+- Language: ${presentationContext.language}
+
+**Slide to Regenerate:**
+${JSON.stringify(slide, null, 2)}
+
+**DESIGN RULES (Strict Adherence):**
+1.  **Reduce Text Density:** Reduce the current text by at least 40%. Make it scannable. Use fragments, NOT full sentences.
+2.  **Max 5 Items:** Never exceed 5 bullet points.
+3.  **Dynamic Layout Logic (The "Anti-Bullet Point" Protocol):**
+    -   **Software/Tools/Libraries:** Use 'bento_grid'. Create a rounded rectangle for each tool. Icon left, description right. Max 10 words per description.
+    -   **Hierarchical Data (Ranks, Steps):** Use 'pyramid'. Order: Top (Peak) -> Bottom (Base).
+    -   **Key Metric / Single Stat:** Use 'stats_highlight' (Hero Number layout).
+    -   **3 Distinct Items:** Use 'three_column' or 'testimonial_three'.
+    -   **4 Distinct Items:** Use 'icon_grid_four' (2x2 Grid).
+    -   **Sequence/Process:** Use 'chevron_list' or 'process'.
+    -   **5+ Distinct Items:** Use 'timeline', 'step_flow', or 'image_carousel_mockup'.
+    -   **Comparison:** Use 'comparison' or 'pros_and_cons'.
+    -   Otherwise, choose the best fit from: 'split_33_66', 'content_left', 'content_right', 'image_full_bleed', 'quote', 'section_header', 'diagonal_flow'.
+4.  **Visuals:** Write a new 'imagePrompt' that is abstract, professional, and metaphorical. NO literal interpretations.
+5.  **Speaker Notes:** Move detailed explanations to 'speakerNotes'. Keep the slide text minimal.
+
+**Output:**
+Your response MUST be a single, raw JSON object representing the new slide (keys: title, content, imagePrompt, layout, speakerNotes). Do not include any conversational text or markdown formatting.`;
+
+    try {
+        const response = await this.ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: 'application/json',
+                responseSchema: this.slideSchema
+            }
+        });
+        const newSlide = JSON.parse(response.text) as Slide;
+        newSlide.rating = null; // Reset rating
+        return this.processAndStripMarkdown(newSlide);
+    } catch(e) {
+        this.error.set({ message: `Failed to regenerate slide: ${(e as Error).message}`, reportable: true });
+        return null;
+    } finally {
+        this.activeGenerations.update(c => c - 1);
+    }
+  }
+  
+  async suggestLayout(slide: Slide): Promise<SlideLayout | null> {
+    if (!this.ai) { return null; }
+    this.activeGenerations.update(c => c + 1);
+    this.error.set(null);
+    const prompt = `You are a presentation design expert. Analyze the content of the following slide and suggest the single best layout for it from the provided list.
+
+**Slide Content:**
+- Title: ${slide.title}
+- Content: ${JSON.stringify(slide.content)}
+
+**CRITICAL INSTRUCTIONS:**
+- Your response MUST be only the name of the layout (e.g., 'two_column').
+- Do not add any explanation or other text.
+- Choose from this list: 'title', 'content_left', 'content_right', 'section_header', 'conclusion', 'two_column', 'three_column', 'quote', 'image_full_bleed', 'table', 'chart_bar', 'chart_line', 'chart_pie', 'chart_doughnut', 'timeline', 'process', 'stats_highlight', 'pyramid', 'funnel', 'swot', 'comparison', 'team_members_four', 'radial_diagram', 'step_flow', 'image_overlap_left', 'hub_and_spoke', 'cycle_diagram', 'venn_diagram', 'alternating_feature_list', 'quadrant_chart', 'bridge_chart', 'gantt_chart_simple', 'org_chart', 'mind_map', 'fishbone_diagram', 'area_chart', 'scatter_plot', 'bubble_chart', 'image_grid_four', 'image_with_caption_below', 'text_over_image', 'quote_with_image', 'feature_highlight_image', 'image_collage', 'image_focus_left', 'image_focus_right', 'checklist', 'numbered_list_large', 'step_flow_vertical', 'circular_flow', 'staggered_list', 'feature_list_icons', 'pros_and_cons', 'kpi_dashboard_three', 'kpi_dashboard_four', 'target_vs_actual', 'faq', 'call_to_action', 'world_map_pins', 'chart_radar', 'chart_heatmap', 'chart_waterfall', 'data_table_highlight', 'gauge_chart_three', 'progress_bar_list', 'roadmap_horizontal', 'roadmap_vertical', 'matrix_3x3', 'gear_diagram', 'arrow_process_flow', 'diverging_arrows', 'converging_arrows', 'chevron_list', 'project_dashboard', 'image_grid_three', 'image_grid_five', 'image_carousel_mockup', 'image_with_side_bullets', 'image_before_after', 'device_mockup_phone', 'device_mockup_laptop', 'image_header_text_below', 'cover_page_logo', 'agenda', 'speaker_introduction', 'testimonial_single', 'testimonial_three', 'definition_list', 'icon_grid_four', 'key_takeaways', 'numbered_highlights_four', 'contact_information', 'thank_you', 'next_steps', 'word_cloud', 'statement', 'company_timeline', 'chapter_divider', 'matrix_2x2', 'image_with_hotspots', 'bento_grid', 'diagonal_flow', 'split_33_66', 'impact'.`;
+
+    try {
+      const response = await this.ai.models.generateContent({ 
+        model: 'gemini-2.5-flash', 
+        contents: prompt,
+        config: { thinkingConfig: { thinkingBudget: 0 } }
+      });
+      return response.text.trim() as SlideLayout;
+    } catch(e) {
+      this.error.set({ message: `Failed to suggest layout: ${(e as Error).message}`, reportable: true });
+      return null;
+    } finally {
+      this.activeGenerations.update(c => c - 1);
+    }
+  }
+
+  async suggestThemes(topic: string): Promise<string[] | null> {
+    if (!this.ai) { return null; }
+    this.activeGenerations.update(c => c + 1);
+    this.error.set(null);
+    const prompt = `Based on the presentation topic "${topic}", suggest up to 5 theme names from the following list that would be a good fit.
+
+**List of Available Themes:**
+${THEME_PRESETS.map(t => `- ${t.name}`).join('\n')}
+
+**STRICT INTENT-BASED COLOR SYSTEM:**
+1. **Aggressive/Offensive Topics** (e.g., attacking, dominating, winning, competition): You MUST include 'Crimson Offensive'.
+2. **Defensive/Safe Topics** (e.g., protecting, security, stability, defending): You MUST include 'Teal Shield'.
+3. **Educational/Technical Topics** (e.g., learning, analysis, science, engineering, documentation): You MUST include 'Slate Educational'.
+
+**CRITICAL INSTRUCTIONS:**
+- Your response MUST be a single, raw JSON array of strings.
+- Each string must be an exact name from the list above.
+- Do not include any conversational text or markdown formatting (like '''json).`;
 
     try {
         const response = await this.ai.models.generateContent({
@@ -739,74 +959,106 @@ CRITICAL: Return only the resulting plain text in ${language}. Do not include an
             config: {
                 responseMimeType: 'application/json',
                 responseSchema: { type: Type.ARRAY, items: { type: Type.STRING } },
+                thinkingConfig: { thinkingBudget: 0 }
             }
         });
-        const improvedNotes = JSON.parse(response.text) as string[];
-        if (improvedNotes.length !== notes.length) {
-            console.warn('AI returned a different number of notes. Using original.');
-            return notes;
-        }
-        return this.processAndStripMarkdown(improvedNotes);
-    } catch(e) {
-        this.error.set(`Failed to improve speaker notes: ${(e as Error).message}`);
+        return JSON.parse(response.text);
+    } catch (e) {
+        this.error.set({ message: `Failed to suggest themes: ${(e as Error).message}`, reportable: true });
+        return null;
+    } finally {
+        this.activeGenerations.update(c => c - 1);
+    }
+  }
+  
+  async reorderSlides(presentation: Presentation): Promise<Slide[] | null> {
+    if (!this.ai) { return null; }
+    this.activeGenerations.update(c => c + 1);
+    this.error.set(null);
+    const slideTitles = presentation.slides.map((s, i) => `${i}: ${s.title}`);
+    const prompt = `You are a presentation flow expert. Given the following list of slide titles with their current indices, reorder them to create the most logical and compelling narrative flow.
+
+**Current Slide Order (index: title):**
+${slideTitles.join('\n')}
+
+**CRITICAL INSTRUCTIONS:**
+- Your response MUST be a single, raw JSON array of numbers.
+- The array must contain the original indices in the new, optimal order.
+- Do not include any conversational text or markdown formatting (like '''json).
+- Ensure every original index is present exactly once in your output array.`;
+    try {
+        const response = await this.ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: 'application/json',
+                responseSchema: { type: Type.ARRAY, items: { type: Type.NUMBER } }
+            }
+        });
+        const newOrder = JSON.parse(response.text) as number[];
+        if (newOrder.length !== presentation.slides.length) return null;
+        return newOrder.map(i => presentation.slides[i]);
+    } catch (e) {
+        this.error.set({ message: `Failed to reorder slides: ${(e as Error).message}`, reportable: true });
         return null;
     } finally {
         this.activeGenerations.update(c => c - 1);
     }
   }
 
-  async reorderSlides(presentation: Presentation): Promise<Slide[] | null> {
+  async generateTheme(promptText: string): Promise<Theme | null> {
+    if (!this.ai) return null;
+    this.activeGenerations.update(c => c + 1);
+    this.error.set(null);
+    const prompt = `Generate a theme for a presentation based on the following description: "${promptText}".
+
+**STRICT COLOR-CODING RULES:**
+- **Aggressive/Offensive Intent:** Use Deep Crimson background with Orange accents.
+- **Defensive/Safe Intent:** Use Navy background with Cool Teal accents.
+- **Educational/Technical Intent:** Use Clean White background with Slate Blue accents/text.
+
+**CRITICAL INSTRUCTIONS:**
+- Your response MUST be a single, raw JSON object.
+- The object must conform to the specified schema for a theme.
+- Do not include any conversational text or markdown formatting (like '''json).`;
+    try {
+        const response = await this.ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: 'application/json',
+                responseSchema: this.themeSchema
+            }
+        });
+        return this.processAndStripMarkdown(JSON.parse(response.text));
+    } catch (e) {
+        this.error.set({ message: `Failed to generate theme: ${(e as Error).message}`, reportable: true });
+        return null;
+    } finally {
+        this.activeGenerations.update(c => c - 1);
+    }
+  }
+
+  async generateSingleSlide(topic: string, presentationContext: Presentation): Promise<Slide | null> {
      if (!this.ai) { return null; }
     this.activeGenerations.update(c => c + 1);
     this.error.set(null);
-    const simplifiedSlides = presentation.slides.map((s, i) => ({ index: i, title: s.title, content: Array.isArray(s.content) ? s.content[0] || '' : s.content }));
-    const prompt = `Given the following presentation slides (represented by their original index, title, and first line of content), determine the most logical order for them.
-    Original presentation title: "${presentation.title}"
-    Slides: ${JSON.stringify(simplifiedSlides)}
-    Return a JSON object with a single key "newOrder" which is an array of the original slide indexes in the new, most logical order. For example: {"newOrder": [2, 0, 1, 3]}.
-    CRITICAL: Your entire response MUST be a single, raw JSON object. Do not include any conversational text or markdown formatting (like '''json).`;
-    try {
-        const response = await this.ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: 'application/json',
-                responseSchema: { type: Type.OBJECT, properties: { newOrder: { type: Type.ARRAY, items: { type: Type.INTEGER } } } },
-            }
-        });
-        const { newOrder } = JSON.parse(response.text) as { newOrder: number[] };
-        const slideCount = presentation.slides.length;
-        const isValid = newOrder &&
-                        newOrder.length === slideCount &&
-                        new Set(newOrder).size === slideCount &&
-                        newOrder.every(i => i >= 0 && i < slideCount);
+    const prompt = `Generate a single, new presentation slide about "${topic}". This slide should fit into the context of the larger presentation titled "${presentationContext.title}".
 
-        if (!isValid) {
-            throw new Error("AI returned an invalid or incomplete order for slides.");
-        }
-        return newOrder.map(i => presentation.slides[i]);
-    } catch(e) {
-        this.error.set(`Failed to reorder slides: ${(e as Error).message}`);
-        return null;
-    } finally {
-        this.activeGenerations.update(c => c - 1);
-    }
-  }
-
-  async generateSingleSlide(topic: string, presentation: Presentation): Promise<Slide | null> {
-    if (!this.ai) { return null; }
-    this.activeGenerations.update(c => c + 1);
-    this.error.set(null);
-    const context = `This is for a presentation titled "${presentation.title}". The slides generated so far are: ${presentation.slides.map(s => s.title).join(', ')}.`;
-    const prompt = `You are a world-class presentation designer. Generate a single new presentation slide about "${topic}".
-    CRITICAL: The entire content of the slide (title, content, speaker notes) MUST be in ${presentation.language}.
-    ${context}
-    The slide must fit logically with the existing content. 
-
-    **Instructions:**
-    1.  Provide a concise title, bullet points, a descriptive image prompt, and speaker notes.
-    2.  As a world-class presentation designer, your layout choice is critical. Choose the **most appropriate layout** for this single slide based on its content: use 'content_left'/'right' for text with an image, 'two_column' or 'three_column' for dense lists, 'quote' for impactful statements, or 'section_header' if it introduces a new topic.
-    3.  CRITICAL: Your entire response MUST be a single, raw JSON object for the slide, matching the schema. Do not include any conversational text or markdown formatting (like '''json). All string fields within the JSON must also be plain text with no markdown.`;
+**CRITICAL INSTRUCTIONS (Gamma Style):**
+1.  **Reduce Text Density:** Keep content minimal and scannable. Use fragments.
+2.  **Dynamic Layout Logic (The "Anti-Bullet Point" Protocol):**
+    -   **Software/Tools/Libraries:** Use 'bento_grid'. Create a rounded rectangle for each tool. Icon left, description right. Max 10 words per description.
+    -   **Hierarchical (Ranks, Steps):** Use 'pyramid'. Order: Top (Peak) -> Bottom (Base).
+    -   **Key Metric / Single Stat:** Use 'stats_highlight' (Hero Number).
+    -   **3 Items:** Use 'three_column'.
+    -   **4 Items:** Use 'icon_grid_four' (2x2 Grid).
+    -   **Sequence:** Use 'chevron_list' or 'process'.
+    -   **5+ Items:** Use 'timeline' or 'process'.
+    -   Otherwise, select the best fit.
+3.  **Visuals:** Provide an abstract, metaphorical 'imagePrompt'.
+4.  **Language:** Content MUST be in ${presentationContext.language}.
+5.  **Output:** Return a single, raw JSON object representing the slide.`;
 
     try {
         const response = await this.ai.models.generateContent({
@@ -814,96 +1066,65 @@ CRITICAL: Return only the resulting plain text in ${language}. Do not include an
             contents: prompt,
             config: {
                 responseMimeType: 'application/json',
-                responseSchema: this.slideSchema,
+                responseSchema: this.slideSchema
             }
         });
         const slide = JSON.parse(response.text) as Slide;
+        slide.rating = null;
         return this.processAndStripMarkdown(slide);
-    } catch(e) {
-        this.error.set(`Failed to generate slide: ${(e as Error).message}`);
+    } catch (e) {
+        this.error.set({ message: `Failed to generate slide: ${(e as Error).message}`, reportable: true });
         return null;
     } finally {
         this.activeGenerations.update(c => c - 1);
     }
   }
 
-  async generateTheme(prompt: string): Promise<Theme | null> {
-    if (!this.ai) { return null; }
+  async getEditedImagePrompt(originalPrompt: string, instruction: string): Promise<string | null> {
+     if (!this.ai) { return null; }
     this.activeGenerations.update(c => c + 1);
     this.error.set(null);
-    const fullPrompt = `Generate a presentation theme based on the following description: "${prompt}".
-    The theme should include a name, category, and specific hex codes for primary, background, and text colors.
-    It must also specify a title font and a body font from the provided list.
-    Return a single valid JSON object matching the schema.
-    CRITICAL: Your entire response MUST be a single, raw JSON object matching the schema. Do not include any conversational text or markdown formatting (like '''json).`;
+    const prompt = `You are a prompt engineer. Your task is to modify an existing image prompt based on a user's instruction.
 
-    try {
-        const response = await this.ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: fullPrompt,
-            config: {
-                responseMimeType: 'application/json',
-                responseSchema: this.themeSchema,
-            }
-        });
-        return JSON.parse(response.text) as Theme;
-    } catch(e) {
-        this.error.set(`Failed to generate theme: ${(e as Error).message}`);
-        return null;
-    } finally {
-        this.activeGenerations.update(c => c - 1);
-    }
-  }
+**Original Prompt:**
+"${originalPrompt}"
 
-  async getEditedImagePrompt(originalPrompt: string, editInstruction: string): Promise<string | null> {
-    if (!this.ai) { return null; }
-    this.activeGenerations.update(c => c + 1);
-    this.error.set(null);
-    const prompt = `You are an expert AI image prompt editor. Your task is to take an existing prompt and a user's edit instruction, and generate a new, single, complete prompt that incorporates the change.
+**User's Instruction:**
+"${instruction}"
 
-    **Original Prompt:**
-    "${originalPrompt}"
-
-    **User's Edit Instruction:**
-    "${editInstruction}"
-
-    **CRITICAL Instructions:**
-    1.  **Synthesize, Don't Just Add:** Intelligently merge the user's instruction into the original prompt. For example, if the original prompt specified "daylight" and the user says "make it night", you must change the lighting descriptions throughout the prompt to reflect this.
-    2.  **Maintain Core Subject:** Do not change the fundamental subject of the original prompt unless the user explicitly asks for it.
-    3.  **Preserve Quality:** The new prompt must retain the high level of detail, artistic style, and cinematic language of the original.
-    4.  **Strict Negative Prompt:** Ensure the new prompt still ends with the negative constraint: "No text, no words, no letters."
-    5.  **Final Output:** Return ONLY the new, improved prompt as a single, raw string. Do not add any explanations, conversational text, or markdown formatting.
-    
-    Now, generate the new prompt.`;
-
+**CRITICAL INSTRUCTIONS:**
+- Combine the original prompt with the user's instruction to create a new, coherent prompt.
+- Retain the core subject of the original prompt but apply the changes requested.
+- Ensure the new prompt is highly descriptive and suitable for a photorealistic AI image generator.
+- The prompt MUST end with: "No text, no words, no letters."
+- Your response MUST be only the new prompt as a single, raw string. Do not add any explanation or markdown formatting.`;
     try {
         const response = await this.ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
         return response.text.trim();
-    } catch(e) {
-        this.error.set(`Failed to get edited image prompt: ${(e as Error).message}`);
+    } catch (e) {
+        this.error.set({ message: `Failed to edit image prompt: ${(e as Error).message}`, reportable: true });
         return null;
     } finally {
         this.activeGenerations.update(c => c - 1);
     }
   }
-
-  async generateSlideContentFromImage(base64ImageData: string): Promise<{title: string, content: string[]} | null> {
-    if (!this.ai) { return null; }
+  
+  async generateSlideContentFromImage(imageUrl: string): Promise<{ title: string; content: string[] } | null> {
+    if (!this.ai) return null;
     this.activeGenerations.update(c => c + 1);
     this.error.set(null);
+    const mimeType = imageUrl.split(';')[0].split(':')[1];
+    const base64Data = imageUrl.split(',')[1];
     
     try {
-      const mimeType = base64ImageData.substring(5, base64ImageData.indexOf(';'));
-      const data = base64ImageData.split(',')[1];
-      const imagePart = { inlineData: { mimeType, data } };
-      
-      const prompt = `Analyze the provided image and generate content for a presentation slide.
-      Your response must be a single, raw JSON object with two keys: "title" (a short, impactful title based on the image) and "content" (a JSON array of 3-4 short, descriptive bullet points about the image).
-      The content should be insightful and professional.`;
-
       const response = await this.ai.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: { parts: [{text: prompt}, imagePart] },
+        contents: {
+          parts: [
+            { inlineData: { mimeType, data: base64Data } },
+            { text: `Analyze this image and generate a suitable title and a few bullet points for a presentation slide based on its content. Your response MUST be a single, raw JSON object with "title" (string) and "content" (array of strings). Do not add any conversational text or markdown formatting.` }
+          ]
+        },
         config: {
           responseMimeType: 'application/json',
           responseSchema: {
@@ -916,346 +1137,187 @@ CRITICAL: Return only the resulting plain text in ${language}. Do not include an
           }
         }
       });
-      const content = JSON.parse(response.text);
-      return this.processAndStripMarkdown(content);
+      return JSON.parse(response.text);
     } catch (e) {
-        this.error.set(`Failed to generate content from image: ${(e as Error).message}`);
-        return null;
-    } finally {
-        this.activeGenerations.update(c => c - 1);
-    }
-  }
-  
-  async runAgentCommand(
-    command: string, 
-    presentation: Presentation, 
-    currentSlideIndex: number
-  ): Promise<{ newPresentation?: Presentation, responseText: string }> {
-    if (!this.ai) {
-        return { responseText: "AI Service is not initialized." };
-    }
-    this.activeGenerations.update(c => c + 1);
-    this.error.set(null);
-
-    try {
-        const simplifiedSlides = presentation.slides.map((s, i) => ({ index: i + 1, title: s.title }));
-        const commandSchema = {
-            type: Type.OBJECT,
-            properties: {
-                action: { 
-                    type: Type.STRING, 
-                    enum: ['ADD_SLIDE', 'CHANGE_THEME', 'REPLACE_TEXT', 'DELETE_SLIDE', 'CHANGE_LAYOUT', 'NO_ACTION'],
-                    description: "The action to perform."
-                },
-                parameters: { 
-                    type: Type.OBJECT,
-                    properties: {
-                        topic: { type: Type.STRING, description: "Topic for a new slide." },
-                        theme_description: { type: Type.STRING, description: "Description for a new theme." },
-                        find_text: { type: Type.STRING },
-                        replace_text: { type: Type.STRING },
-                        slide_index: { type: Type.INTEGER, description: "The 1-based index of the slide to target." },
-                        new_layout: { type: Type.STRING, enum: [
-                          'title', 'content_left', 'content_right', 'section_header', 'conclusion', 'two_column', 
-                          'three_column', 'quote', 'image_full_bleed', 'table', 'chart_bar', 'chart_line', 
-                          'chart_pie', 'chart_doughnut', 'timeline', 'process', 'stats_highlight', 'pyramid', 
-                          'funnel', 'swot', 'comparison', 'team_members_four', 'radial_diagram', 'step_flow', 
-                          'image_overlap_left', 'hub_and_spoke', 'cycle_diagram', 'venn_diagram', 'alternating_feature_list',
-                          'quadrant_chart', 'bridge_chart', 'gantt_chart_simple', 'org_chart', 'mind_map', 
-                          'fishbone_diagram', 'area_chart', 'scatter_plot', 'bubble_chart', 'image_grid_four',
-                          'image_with_caption_below', 'text_over_image', 'quote_with_image', 'feature_highlight_image',
-                          'image_collage', 'image_focus_left', 'image_focus_right', 'checklist', 'numbered_list_large',
-                          'step_flow_vertical', 'circular_flow', 'staggered_list', 'feature_list_icons', 'pros_and_cons',
-                          'kpi_dashboard_three', 'kpi_dashboard_four', 'target_vs_actual', 'faq', 'call_to_action',
-                          'world_map_pins'
-                        ], description: "The new layout name." }
-                    },
-                    description: "Parameters for the action."
-                },
-                responseText: { 
-                    type: Type.STRING,
-                    description: "A conversational response for the user."
-                }
-            },
-            required: ['action', 'responseText']
-        };
-
-        const prompt = `You are an AI agent in a presentation editor. Analyze the user command and determine the single best action to take.
-        
-        **Context:**
-        - Presentation Title: "${presentation.title}"
-        - Current Slide Index: ${currentSlideIndex} (0-based)
-        - Current Slide Title: "${presentation.slides[currentSlideIndex].title}"
-        - Slides: ${JSON.stringify(simplifiedSlides)}
-
-        **User Command:** "${command}"
-        
-        **Available Actions:**
-        - **ADD_SLIDE**: If the user wants to add a new slide. The 'topic' parameter should be the subject of the new slide.
-        - **CHANGE_THEME**: If the user wants to change the presentation's visual theme. The 'theme_description' parameter should describe the new theme.
-        - **REPLACE_TEXT**: If the user wants to find and replace text everywhere. The 'find_text' and 'replace_text' parameters are required.
-        - **CHANGE_LAYOUT**: If the user wants to change the layout of a specific slide. 'slide_index' and 'new_layout' are required. The index is 1-based.
-        - **DELETE_SLIDE**: If the user wants to delete a slide. 'slide_index' is required. The index is 1-based.
-        - **NO_ACTION**: For anything else (like modifying a specific slide, which is not supported yet, or just chatting).
-        
-        CRITICAL: Respond ONLY with a raw JSON object matching the schema.`;
-
-        const response = await this.ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: 'application/json',
-                responseSchema: commandSchema,
-            }
-        });
-
-        const result = JSON.parse(response.text);
-        const { action, parameters, responseText } = result;
-
-        let newPresentation: Presentation | undefined = undefined;
-
-        switch (action) {
-            case 'ADD_SLIDE':
-                if (parameters.topic) {
-                    const newSlide = await this.generateSingleSlide(parameters.topic, presentation);
-                    if (newSlide) {
-                        newPresentation = { ...presentation, slides: [...presentation.slides, newSlide] };
-                    }
-                }
-                break;
-            case 'CHANGE_THEME':
-                if (parameters.theme_description) {
-                    const newTheme = await this.generateTheme(parameters.theme_description);
-                    if (newTheme) {
-                        newPresentation = { ...presentation, theme: newTheme };
-                    }
-                }
-                break;
-            case 'REPLACE_TEXT':
-                if (parameters.find_text && parameters.replace_text) {
-                    function escapeRegExp(string: string): string {
-                      return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    }
-                    const findRegex = new RegExp(escapeRegExp(parameters.find_text), 'gi');
-                    const newSlides = JSON.parse(JSON.stringify(presentation.slides));
-                    newSlides.forEach((slide: Slide) => {
-                        slide.title = slide.title.replace(findRegex, parameters.replace_text);
-                        if (Array.isArray(slide.content)) {
-                            slide.content = slide.content.map(p => p.replace(findRegex, parameters.replace_text));
-                        } else if (typeof slide.content === 'string') {
-                            slide.content = slide.content.replace(findRegex, parameters.replace_text);
-                        }
-                        if (Array.isArray(slide.speakerNotes)) {
-                            slide.speakerNotes = slide.speakerNotes.map(n => n.replace(findRegex, parameters.replace_text));
-                        } else if (typeof slide.speakerNotes === 'string') {
-                            slide.speakerNotes = slide.speakerNotes.replace(findRegex, parameters.replace_text);
-                        }
-                    });
-                    newPresentation = { ...presentation, slides: newSlides };
-                }
-                break;
-            case 'DELETE_SLIDE':
-                if (parameters.slide_index && parameters.slide_index > 0 && parameters.slide_index <= presentation.slides.length) {
-                    const indexToDelete = parameters.slide_index - 1; // Convert to 0-based
-                    const newSlides = [...presentation.slides];
-                    newSlides.splice(indexToDelete, 1);
-                    newPresentation = { ...presentation, slides: newSlides };
-                }
-                break;
-            case 'CHANGE_LAYOUT':
-                if (parameters.slide_index && parameters.new_layout && parameters.slide_index > 0 && parameters.slide_index <= presentation.slides.length) {
-                    const indexToChange = parameters.slide_index - 1; // Convert to 0-based
-                    const newSlides = [...presentation.slides];
-                    newSlides[indexToChange] = { ...newSlides[indexToChange], layout: parameters.new_layout };
-                    newPresentation = { ...presentation, slides: newSlides };
-                }
-                break;
-            case 'NO_ACTION':
-            default:
-                break;
-        }
-        
-        return { newPresentation, responseText };
-
-    } catch (e) {
-        const err = e as Error;
-        console.error('Agent command failed:', err);
-        this.error.set(`Agent command failed: ${err.message}`);
-        return { responseText: "Sorry, I encountered an error and couldn't complete that request." };
-    } finally {
-        this.activeGenerations.update(c => c - 1);
-    }
-  }
-
-  async evolveCorePrompt(currentPrompt: string, feedbackSummary: string): Promise<string | null> {
-    if (!this.ai) {
-      this.error.set("AI Service is not initialized.");
-      return null;
-    }
-
-    this.activeGenerations.update(c => c + 1);
-    this.error.set(null);
-
-    const metaPrompt = `You are an expert AI prompt engineer. Your task is to analyze and rewrite a "base prompt" used to generate presentations. The goal is to evolve the prompt based on user feedback to produce better results in the future.
-
-**User Feedback Summary:**
-This section contains structured feedback from the user. It will detail which slides they liked and disliked. For disliked slides, it will provide specific reasons like "Boring Content", "Irrelevant Image", "Poor Layout", etc.
----
-${feedbackSummary}
----
-
-**Current Base Prompt (DO NOT surround your output with markdown):**
----
-${currentPrompt}
----
-
-**Your Task & Thought Process:**
-
-1.  **Root Cause Analysis:** Carefully read the user feedback. Identify the core patterns. For example, if multiple slides are disliked for "Poor Layout", the instructions for the "Content-Layout Fit Analysis Algorithm" are failing and must be improved. If feedback is about "Boring Content", strengthen your instructions on writing engaging text for the 'NOTES' key. If feedback is about "Irrelevant Image", enhance the instructions for the 'IMAGE_PROMPT' to demand better context-awareness and conceptual linkage. The goal is to fix the underlying instruction that led to the error.
-
-2.  **Surgical Improvement:** Determine what specific instructions in the base prompt need to be changed, added, or strengthened to address the feedback. The goal is surgical improvement, not a complete rewrite of the prompt's persona or core structure. Your changes must be targeted improvements based directly on the feedback provided.
-
-3.  **Rewrite:** Rewrite the *entire* base prompt, incorporating your improvements. Do not just list the changes. Output the full, new, ready-to-use prompt.
-
-4.  **Preserve Core Structure:** Maintain the overall structure, placeholders (like {topic}, {slideCount}), and key output format instructions (like 'SLIDE_START', 'LAYOUT:'). The prompt must remain functional.
-
-**CRITICAL OUTPUT REQUIREMENT:**
-Your entire response must be ONLY the raw, rewritten prompt text. Do NOT include any conversational text, explanations, or markdown formatting like \`\`\`. Start your response directly with "Your SOLE task is to generate..." and end it with "...in the specified plain text format.".`;
-
-    try {
-      const response = await this.ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: metaPrompt,
-      });
-      return response.text.trim();
-    } catch (e) {
-      const err = e as Error;
-      console.error('Error evolving core prompt:', err);
-      this.error.set(`An error occurred during AI evolution: ${err.message}`);
+      this.error.set({ message: `Failed to generate content from image: ${(e as Error).message}`, reportable: true });
       return null;
     } finally {
       this.activeGenerations.update(c => c - 1);
     }
   }
 
-  async regenerateSlide(originalSlide: Slide, presentationContext: Presentation): Promise<Slide | null> {
-    if (!this.ai) { return null; }
-    this.activeGenerations.update(c => c + 1);
-    this.error.set(null);
-
-    const context = `This is for a presentation titled "${presentationContext.title}". The slides generated so far are: ${presentationContext.slides.map(s => `"${s.title}"`).join(', ')}.`;
-    const prompt = `You are a world-class presentation designer. Your task is to completely regenerate a single presentation slide. You must provide a fresh take on the content, title, and image prompt while staying on topic.
-
-    **Original Slide Information (for context only):**
-    - Title: "${originalSlide.title}"
-    - Content Summary: ${Array.isArray(originalSlide.content) ? originalSlide.content.join(', ') : originalSlide.content}
-    - Layout: ${originalSlide.layout}
+  async runAgentCommand(command: string, presentation: Presentation, currentSlideIndex: number): Promise<{ responseText: string, newPresentation: Presentation | null }> {
+    if (!this.ai) return { responseText: "AI Service not initialized.", newPresentation: null };
     
-    **Context of the Presentation:**
-    ${context}
+    const prompt = `You are Agnes AI, an agent with direct control over a presentation's JSON structure. Your task is to understand a user's command and modify the presentation's JSON accordingly.
 
-    **CRITICAL INSTRUCTIONS:**
-    1.  **Be Creative:** Do NOT simply rephrase the original slide. Generate a new, interesting perspective or angle on the slide's topic. Create a new title, new content points, and a completely new, highly descriptive image prompt.
-    2.  **Layout Choice:** As a world-class designer, your layout choice is critical. Choose the **most appropriate layout** for the new content you generate.
-    3.  **Language:** The entire content of the new slide (title, content, speaker notes) MUST be in ${presentationContext.language}.
-    4.  **JSON Output:** Your entire response MUST be a single, raw JSON object for the slide, matching the required schema. Do not include any conversational text or markdown formatting (like '''json). All string fields within the JSON must also be plain text with no markdown.
+**User Command:** "${command}"
 
-    Now, generate the new slide object.`;
-    
+**Current Slide Index:** ${currentSlideIndex} (The user is looking at this slide)
+
+**Current Presentation JSON:**
+${JSON.stringify(presentation, null, 2)}
+
+**CRITICAL INSTRUCTIONS:**
+1.  **Analyze the Command:** Understand the user's intent. Are they adding a slide, changing a theme, editing text, etc.?
+2.  **Formulate a Plan:** Decide which parts of the JSON need to be changed.
+3.  **Generate a Response:** Your response MUST be a single, raw JSON object with two keys:
+    *   **"responseText"**: A string containing your conversational reply to the user, explaining what you did or why you couldn't do it.
+    *   **"newPresentationJSON"**: The complete, modified presentation JSON structure. If you cannot fulfill the request or no changes are needed, return the original presentation JSON unmodified.
+
+**Example 1:**
+- Command: "Change the title of this slide to 'Our Vision'"
+- Response:
+{
+  "responseText": "Done! I've updated the title of the current slide to 'Our Vision'.",
+  "newPresentationJSON": { ... the entire presentation JSON with the slide title changed ... }
+}
+
+**Example 2:**
+- Command: "Make the theme have a black background"
+- Response:
+{
+  "responseText": "I've updated the theme to have a black background.",
+  "newPresentationJSON": { ... the entire presentation JSON with theme.backgroundColor set to '#000000' ... }
+}
+
+**Example 3:**
+- Command: "Tell me a joke"
+- Response:
+{
+  "responseText": "I'm here to help with your presentation, not tell jokes!",
+  "newPresentationJSON": { ... the original, unmodified presentation JSON ... }
+}
+
+Now, process the user's command and generate your response.`;
+
     try {
         const response = await this.ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
             config: {
                 responseMimeType: 'application/json',
-                responseSchema: this.slideSchema,
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        responseText: { type: Type.STRING },
+                        newPresentationJSON: { type: Type.OBJECT } // A generic object, we'll cast it later
+                    },
+                    required: ['responseText', 'newPresentationJSON']
+                }
             }
         });
-        const slide = JSON.parse(response.text) as Slide;
-        return this.processAndStripMarkdown(slide);
+
+        const result = JSON.parse(response.text);
+        return {
+            responseText: result.responseText,
+            newPresentation: result.newPresentationJSON as Presentation
+        };
     } catch(e) {
-        this.error.set(`Failed to regenerate slide: ${(e as Error).message}`);
+        console.error("Agent command failed:", e);
+        return {
+            responseText: `I'm sorry, I encountered an error trying to process that: ${(e as Error).message}`,
+            newPresentation: null
+        };
+    }
+  }
+  
+  async evolveCorePrompt(currentPrompt: string, feedback: string): Promise<string | null> {
+    if (!this.ai) return null;
+    const prompt = `You are an AI specialized in self-improvement and prompt engineering. Your task is to evolve a prompt used to generate presentations based on user feedback.
+
+**Current Core Prompt:**
+---
+${currentPrompt}
+---
+
+**User Feedback Analysis:**
+---
+${feedback}
+---
+
+**CRITICAL INSTRUCTIONS:**
+1.  **Analyze Feedback:** Deeply understand the user's likes and dislikes from the feedback summary. Identify patterns. For example, if users dislike "Boring Content" and like slides with specific layouts, the prompt should be adjusted to encourage more dynamic content and favor those layouts.
+2.  **Evolve the Prompt:** Subtly modify the "Current Core Prompt". Do NOT rewrite it from scratch. Make targeted improvements to address the feedback.
+    -   If users find content boring, you might add instructions like: "Incorporate surprising statistics or a compelling anecdote in the speaker notes."
+    -   If images are irrelevant, you might strengthen the 'IMAGE_PROMPT' instructions: "The image prompt MUST be a direct, conceptual metaphor for the slide's content."
+    -   If layouts are poor, you might add more specific guidance to the "Design Council Decision on Layouts" section.
+3.  **Maintain Structure:** The core structure and keys of the original prompt must be preserved.
+4.  **Final Output:** Your response MUST be only the new, improved prompt as a single, raw string. Do not add any explanation, conversational text, or markdown formatting.`;
+    
+    try {
+        const response = await this.ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
+        return response.text.trim();
+    } catch (e) {
+        this.error.set({ message: `Failed to evolve core prompt: ${(e as Error).message}`, reportable: true });
+        return null;
+    }
+  }
+
+  async generateThemeFromImage(base64ImageData: string): Promise<Theme | null> {
+    if (!this.ai) return null;
+    this.activeGenerations.update(c => c + 1);
+    this.error.set(null);
+    
+    const mimeType = base64ImageData.split(';')[0].split(':')[1];
+    const data = base64ImageData.split(',')[1];
+
+    try {
+        const response = await this.ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: {
+                parts: [
+                    { inlineData: { mimeType, data } },
+                    { text: `You are a professional designer. Analyze this image and generate a harmonious presentation theme based on its colors and mood. Your response MUST be a single, raw JSON object that conforms to the theme schema. Do not include any conversational text or markdown formatting.` }
+                ]
+            },
+            config: {
+                responseMimeType: 'application/json',
+                responseSchema: this.themeSchema
+            }
+        });
+        return this.processAndStripMarkdown(JSON.parse(response.text));
+    } catch (e) {
+        this.error.set({ message: `Failed to generate theme from image: ${(e as Error).message}`, reportable: true });
         return null;
     } finally {
         this.activeGenerations.update(c => c - 1);
     }
   }
 
-  async suggestLayout(slide: Slide): Promise<SlideLayout | null> {
-    if (!this.ai) { return null; }
+  async initiateVideoGeneration(prompt: string, imageBase64: string, mimeType: string): Promise<any> {
+    if (!this.ai) throw new Error("AI Service not initialized.");
     this.activeGenerations.update(c => c + 1);
     this.error.set(null);
-    const prompt = `You are an expert presentation designer. Analyze the following slide content and determine the absolute best layout for it.
-    
-    **Slide Content:**
-    - Title: "${slide.title}"
-    - Content: ${JSON.stringify(slide.content)}
-
-    **Available Layouts:**
-    'title', 'content_left', 'content_right', 'section_header', 'conclusion', 'two_column', 'three_column', 'quote', 'image_full_bleed', 'table', 'chart_bar', 'chart_line', 'chart_pie', 'chart_doughnut', 'timeline', 'process', 'stats_highlight', 'pyramid', 'funnel', 'swot', 'comparison', 'team_members_four', 'radial_diagram', 'step_flow'
-
-    **Your Task:**
-    Based on the structure and amount of content, return the single most appropriate layout name from the list above.
-    For example, if the content is a list of 6-10 items, 'two_column' is a great choice. If it's a quote, use 'quote'. If it's 4 distinct categories (like Strengths, Weaknesses...), 'swot' is perfect. If it's a hierarchical process, 'pyramid' or 'funnel' could work.
-
-    CRITICAL: Respond ONLY with the single layout name as a raw string (e.g., "two_column"). Do not add any explanation or other text.`;
 
     try {
-        const response = await this.ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-              thinkingConfig: { thinkingBudget: 0 }
-            }
-        });
-        const layout = response.text.trim() as SlideLayout;
-        // Basic validation
-        const validLayouts: SlideLayout[] = ['title', 'content_left', 'content_right', 'section_header', 'conclusion', 'two_column', 'three_column', 'quote', 'image_full_bleed', 'table', 'chart_bar', 'chart_line', 'chart_pie', 'chart_doughnut', 'timeline', 'process', 'stats_highlight', 'pyramid', 'funnel', 'swot', 'comparison', 'team_members_four', 'radial_diagram', 'step_flow', 'image_overlap_left', 'hub_and_spoke', 'cycle_diagram', 'venn_diagram', 'alternating_feature_list'];
-        if (validLayouts.includes(layout)) {
-            return layout;
+      const operation = await this.ai.models.generateVideos({
+        model: 'veo-2.0-generate-001',
+        prompt: prompt,
+        image: {
+          imageBytes: imageBase64.split(',')[1],
+          mimeType: mimeType,
+        },
+        config: {
+          numberOfVideos: 1
         }
-        console.warn(`AI suggested an invalid layout: ${layout}`);
-        return null;
-    } catch(e) {
-        this.error.set(`Failed to suggest layout: ${(e as Error).message}`);
-        return null;
+      });
+      return operation;
+    } catch (e) {
+      this.error.set({ message: `Failed to start video generation: ${(e as Error).message}`, reportable: true });
+      throw e;
     } finally {
-        this.activeGenerations.update(c => c - 1);
+      this.activeGenerations.update(c => c - 1);
     }
   }
 
-  async suggestThemes(topic: string): Promise<string[] | null> {
-    if (!this.ai) { return null; }
-    this.activeGenerations.update(c => c + 1);
-    this.error.set(null);
-    
-    const themeNames = THEME_PRESETS.map(t => t.name);
-
-    const prompt = `You are an expert design consultant. Based on the following presentation topic, select the 3 to 5 most appropriate and visually appealing theme names from the provided list. Consider the mood, industry, and potential visual style associated with the topic.
-
-    **Presentation Topic:** "${topic}"
-    
-    **Available Theme Names:**
-    ${JSON.stringify(themeNames)}
-
-    CRITICAL: Your entire response MUST be a single, raw JSON array of the theme name strings you have selected. Do not include any conversational text or markdown formatting (like '''json).`;
-
+  async pollVideoOperation(operation: any): Promise<any> {
+    if (!this.ai) throw new Error("AI Service not initialized.");
     try {
-        const response = await this.ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: 'application/json',
-                responseSchema: { type: Type.ARRAY, items: { type: Type.STRING } },
-                thinkingConfig: { thinkingBudget: 0 }
-            }
-        });
-        return JSON.parse(response.text) as string[];
-    } catch(e) {
-        this.error.set(`Failed to suggest themes: ${(e as Error).message}`);
-        return null;
-    } finally {
-        this.activeGenerations.update(c => c - 1);
+      return await this.ai.operations.getVideosOperation({ operation: operation });
+    } catch (e) {
+      this.error.set({ message: `Failed to poll video status: ${(e as Error).message}`, reportable: true });
+      throw e;
     }
   }
 }

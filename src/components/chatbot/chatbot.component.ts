@@ -34,7 +34,7 @@ export class ChatbotComponent {
   constructor() {
     this.messages.set([{
       sender: 'bot',
-      text: `Hello! I am your AI agent. I can modify this presentation for you. Try things like:
+      text: `Hello! I am Agnes, your AI presentation agent. I can modify this presentation for you. Try things like:
 - "Add a new slide about our company history"
 - "Change the theme to be darker"
 - "Replace 'synergy' with 'collaboration' everywhere"`

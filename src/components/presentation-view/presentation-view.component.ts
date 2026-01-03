@@ -161,7 +161,7 @@ export class PresentationViewComponent implements OnDestroy {
 
     this.presenterWindow = window.open('', 'presenterNotes', 'width=1000,height=700,scrollbars=yes,resizable=yes');
     if (this.presenterWindow) {
-      this.presenterWindow.document.title = 'Presenter View - ' + this.presentation().title;
+      this.presenterWindow.document.title = 'Presenter View | Agnes AI - ' + this.presentation().title;
       this.presenterWindow.document.body.innerHTML = `
         <head>
           <title>Presenter Notes</title>

@@ -9,6 +9,12 @@
       <header class="bg-gray-900 shadow-md p-2 flex justify-between items-center z-30 flex-shrink-0">
         <div class="flex items-center gap-4">
           <h1 class="text-xl font-bold text-white">{{ pres.title }}</h1>
+          @if (pres.sources && pres.sources.length > 0) {
+            <span class="flex items-center gap-1 text-xs bg-gray-700 text-gray-300 px-2 py-1 rounded-full" title="Content was generated using Google Search for up-to-date information.">
+              <span class="material-symbols-outlined !text-sm !-ml-1">google</span>
+              <span>Sourced with Google</span>
+            </span>
+          }
           <div [class.text-green-400]="autosaveStatus() === 'saved'" [class.text-yellow-400]="autosaveStatus() === 'saving'" class="text-sm transition-colors">
             @switch(autosaveStatus()) {
               @case('saving') { <span>Saving...</span> }
@@ -260,6 +266,19 @@
                       <button title="Regenerate this slide from scratch" (click)="regenerateCurrentSlide()" class="text-sm p-2 bg-gray-700 hover:bg-gray-600 rounded">Regenerate Slide</button>
                       <button title="Let AI suggest a better slide order" (click)="smartReorder()" class="text-sm p-2 bg-gray-700 hover:bg-gray-600 rounded col-span-2">Smart Reorder Slides</button>
                   </div>
+
+                  <div class="border-t border-gray-700 my-6"></div>
+
+                  <h4 class="text-lg font-semibold text-gray-300 mb-2">Slide Animation</h4>
+                  <p class="text-sm text-gray-500 mb-2">Set the transition for this slide in PowerPoint exports.</p>
+                  <select [ngModel]="currentSlide()?.animation || 'none'" (ngModelChange)="changeAnimation($event)"
+                          class="w-full bg-gray-700 border-gray-600 rounded-md shadow-sm p-2 text-white focus:ring-purple-500 focus:border-purple-500">
+                    <option value="none">None</option>
+                    <option value="fadeIn">Fade In</option>
+                    <option value="flyIn">Fly In</option>
+                    <option value="wipe">Wipe</option>
+                    <option value="zoomIn">Zoom In</option>
+                  </select>
                 }
                  @case('layouts') {
                   <h3 class="text-xl font-bold mb-4">Change Layout</h3>
@@ -597,8 +616,8 @@
 <!-- Chatbot -->
 @if (presentation(); as pres) {
   @if(!isChatbotOpen()) {
-    <button (click)="isChatbotOpen.set(true)" title="Open AI Agent" class="fixed bottom-6 right-6 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg p-4 z-40 transition-transform hover:scale-110">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586zM12 6a2 2 0 100-4 2 2 0 000 4zM10 18a2 2 0 100-4 2 2 0 000 4zM4 10a2 2 0 100-4 2 2 0 000 4z" /></svg>
+    <button (click)="isChatbotOpen.set(true)" title="Open AI Agent" class="fixed bottom-6 right-6 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg p-3 z-40 transition-transform hover:scale-110 flex items-center justify-center w-16 h-16">
+        <span class="font-bold text-3xl" style="font-family: 'Playfair Display', serif;">A</span>
     </button>
   }
   <app-chatbot 

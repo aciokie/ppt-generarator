@@ -21,16 +21,115 @@ export class SlideComponent {
   generateContentFromImage = output<void>();
   improveImagePrompt = output<void>();
   improveContent = output<{field: 'title' | 'content' | 'speakerNotes' | 'column_title' | 'column_text' | 'item1' | 'item2', index?: number}>();
+  generateVideo = output<void>();
+
+  private readonly layoutAliasMap: Record<string, SlideLayout> = {
+      'contentleft': 'content_left',
+      'contentright': 'content_right',
+      'twocolumn': 'two_column',
+      'threecolumn': 'three_column',
+      'sectionheader': 'section_header',
+      'chapterdivider': 'section_header',
+      'imagefullbleed': 'image_full_bleed',
+      'hubandspoke': 'hub_and_spoke',
+      'imageoverlapleft': 'image_full_bleed', // Mapped to full bleed with scrim
+      'chartwaterfall': 'bridge_chart',
+      'matrix2x2': 'quadrant_chart',
+      'imagewithhotspots': 'feature_highlight_image',
+      'companytimeline': 'timeline',
+      'imagefocusright': 'image_focus_right',
+      'imagefocusleft': 'image_focus_left',
+      'imagewithsidebullets': 'image_with_side_bullets',
+      'alternatingfeaturelist': 'alternating_feature_list',
+      'coverpagelogo': 'cover_page_logo',
+      'kpidashboardthree': 'kpi_dashboard_three',
+      'featurelisticons': 'feature_list_icons',
+      'calltoaction': 'call_to_action',
+      'statshighlight': 'stats_highlight',
+      'keytakeaways': 'key_takeaways',
+      'thankyou': 'thank_you',
+      'definitionlist': 'definition_list',
+      'teammembersfour': 'team_members_four',
+      'radialdiagram': 'radial_diagram',
+      'stepflow': 'step_flow',
+      'cyclediagram': 'cycle_diagram',
+      'venndiagram': 'venn_diagram',
+      'quadrantchart': 'quadrant_chart',
+      'bridgechart': 'bridge_chart',
+      'ganttchartsimple': 'gantt_chart_simple',
+      'orgchart': 'org_chart',
+      'mindmap': 'mind_map',
+      'fishbonediagram': 'fishbone_diagram',
+      'areachart': 'area_chart',
+      'scatterplot': 'scatter_plot',
+      'bubblechart': 'bubble_chart',
+      'imagegridfour': 'image_grid_four',
+      'imagewithcaptionbelow': 'image_with_caption_below',
+      'textoverimage': 'image_full_bleed', // Mapped to full bleed with scrim
+      'quotewithimage': 'quote_with_image',
+      'featurehighlightimage': 'feature_highlight_image',
+      'imagecollage': 'image_collage',
+      'numberedlistlarge': 'numbered_list_large',
+      'stepflowvertical': 'step_flow_vertical',
+      'circularflow': 'circular_flow',
+      'staggeredlist': 'staggered_list',
+      'prosandcons': 'pros_and_cons',
+      'kpidashboardfour': 'kpi_dashboard_four',
+      'targetvsactual': 'target_vs_actual',
+      'worldmappins': 'image_full_bleed', // Mapped to full bleed for map callouts
+      'chartradar': 'chart_radar',
+      'chartheatmap': 'chart_heatmap',
+      'datatablehighlight': 'data_table_highlight',
+      'gaugechartthree': 'gauge_chart_three',
+      'progressbarlist': 'progress_bar_list',
+      'roadmaphorizontal': 'roadmap_horizontal',
+      'roadmapvertical': 'roadmap_vertical',
+      'matrix3x3': 'matrix_3x3',
+      'geardiagram': 'gear_diagram',
+      'arrowprocessflow': 'arrow_process_flow',
+      'divergingarrows': 'diverging_arrows',
+      'convergingarrows': 'converging_arrows',
+      'chevronlist': 'chevron_list',
+      'projectdashboard': 'project_dashboard',
+      'imagegridthree': 'image_grid_three',
+      'imagegridfive': 'image_grid_five',
+      'imagecarouselmockup': 'image_carousel_mockup',
+      'imagebeforeafter': 'image_before_after',
+      'devicemockupphone': 'device_mockup_phone',
+      'devicemockuplaptop': 'device_mockup_laptop',
+      'imageheadertextbelow': 'image_header_text_below',
+      'speakerintroduction': 'speaker_introduction',
+      'testimonialsingle': 'testimonial_single',
+      'testimonialthree': 'testimonial_three',
+      'icongridfour': 'icon_grid_four',
+      'numberedhighlightsfour': 'numbered_highlights_four',
+      'contactinformation': 'contact_information',
+      'nextsteps': 'next_steps',
+      'wordcloud': 'word_cloud',
+      'statement': 'statement',
+      'bentobox': 'bento_grid', // New Alias
+      'bentogrid': 'bento_grid', // New Alias
+      'diagonalflow': 'diagonal_flow', // New Alias
+      'split3366': 'split_33_66', // New Alias
+      'impactslide': 'impact', // New Alias
+  };
 
   protected readonly normalizedLayout = computed(() => {
-    const layout = this.slide().layout;
-    // Handle common AI model inconsistencies in layout naming
-    switch (layout) {
-      case 'imagefocusright' as any: return 'image_focus_right';
-      case 'imagefocusleft' as any: return 'image_focus_left';
-      case 'imageoverlapleft' as any: return 'image_overlap_left';
-      default: return layout;
+    const layout = this.slide().layout?.trim().toLowerCase();
+    if (!layout) return 'title';
+    
+    // Normalize by removing all underscores and spaces
+    const normalizedKey = layout.replace(/[_ ]/g, '');
+    
+    // Check the alias map
+    const aliased = this.layoutAliasMap[normalizedKey];
+    if (aliased) {
+        return aliased;
     }
+
+    // If no alias is found, it might already be a canonical name.
+    // We return it as is, and the @default case in the template will catch any truly unknown layouts.
+    return layout as SlideLayout;
   });
 
   imageStyle = signal('Photorealistic');
@@ -43,8 +142,8 @@ export class SlideComponent {
     'Watercolor Painting',
     'Vintage Polaroid'
   ];
-  aspectRatio = signal('16:9');
-  readonly aspectRatios = ['16:9', '4:3', '1:1', '3:4', '9:16'];
+  aspectRatio = signal('Auto');
+  readonly aspectRatios = ['Auto', '16:9', '4:3', '1:1', '3:4', '9:16'];
 
   isPromptCopied = signal(false);
 
@@ -82,7 +181,7 @@ export class SlideComponent {
 
   protected readonly pairedListContent = computed(() => {
     const layout = this.slide().layout;
-    const pairedLayouts: SlideLayout[] = ['timeline', 'process', 'stats_highlight', 'alternating_feature_list', 'faq', 'kpi_dashboard_three', 'kpi_dashboard_four'];
+    const pairedLayouts: SlideLayout[] = ['timeline', 'process', 'stats_highlight', 'alternating_feature_list', 'faq', 'kpi_dashboard_three', 'kpi_dashboard_four', 'definition_list', 'company_timeline', 'roadmap_horizontal', 'roadmap_vertical', 'bento_grid', 'icon_grid_four'];
     if (!pairedLayouts.includes(layout)) {
       return [];
     }
@@ -96,8 +195,19 @@ export class SlideComponent {
     return pairs;
   });
 
+  protected readonly progressBarListContent = computed(() => {
+    if (this.slide().layout !== 'progress_bar_list') return [];
+    const content = this.normalizedContent();
+    const items: { label: string; value: number }[] = [];
+    for (let i = 0; i < content.length; i+= 2) {
+      const value = parseInt(content[i+1], 10);
+      items.push({ label: content[i], value: isNaN(value) ? 0 : value });
+    }
+    return items;
+  });
+
   protected readonly featureListIconsContent = computed(() => {
-    if (this.slide().layout !== 'feature_list_icons') return [];
+    if (this.slide().layout !== 'feature_list_icons' && this.slide().layout !== 'contact_information') return [];
     const content = this.normalizedContent();
     const items: { icon: string, text: string }[] = [];
     // The prompt says pairs of (icon, text).
@@ -107,6 +217,30 @@ export class SlideComponent {
       }
     }
     return items;
+  });
+
+  protected readonly speakerIntroductionContent = computed(() => {
+    if (this.slide().layout !== 'speaker_introduction') return null;
+    const content = this.normalizedContent();
+    return {
+      name: content[0] || 'Speaker Name',
+      title: content[1] || 'Speaker Title',
+      bio: content[2] || 'Speaker biography goes here.',
+    };
+  });
+
+  protected readonly testimonialThreeContent = computed(() => {
+    if (this.slide().layout !== 'testimonial_three') return [];
+    const content = this.normalizedContent();
+    const testimonials: { quote: string, name: string, title: string }[] = [];
+    for (let i = 0; i < content.length; i+= 3) {
+      testimonials.push({
+        quote: content[i] || '',
+        name: content[i+1] || '',
+        title: content[i+2] || '',
+      });
+    }
+    return testimonials;
   });
 
   protected readonly prosAndConsContent = computed(() => {
@@ -259,6 +393,16 @@ export class SlideComponent {
     return this.normalizedContent();
   });
 
+  protected readonly wordCloudItems = computed(() => {
+    if (this.slide().layout !== 'word_cloud') return [];
+    const content = this.normalizedContent();
+    const sizes = ['text-xl', 'text-2xl', 'text-3xl', 'text-4xl', 'text-5xl'];
+    return content.map((word, index) => ({
+      text: word,
+      size: sizes[index % sizes.length],
+    }));
+  });
+
   protected readonly swotContent = computed(() => {
     if (this.slide().layout !== 'swot') return null;
     const content = this.normalizedContent();
@@ -353,6 +497,23 @@ export class SlideComponent {
     return this.pairedListContent();
   });
 
+  protected readonly isTableDataValid = computed(() => {
+    const tableData = this.slide().tableData;
+    return Array.isArray(tableData) && tableData.length > 0;
+  });
+
+  protected readonly tableHeader = computed(() => {
+    if (!this.isTableDataValid()) return [];
+    // The non-null assertion is safe because of isTableDataValid check
+    return this.slide().tableData![0];
+  });
+
+  protected readonly tableRows = computed(() => {
+    const tableData = this.slide().tableData;
+    if (!this.isTableDataValid() || tableData!.length < 2) return [];
+    // The non-null assertion is safe because of isTableDataValid check
+    return tableData!.slice(1);
+  });
 
   onContentChange(field: 'title' | 'content' | 'speakerNotes' | 'column_title' | 'column_text' | 'item1' | 'item2', event: Event, index?: number): void {
     const target = event.target as HTMLElement;
@@ -393,7 +554,7 @@ export class SlideComponent {
 
   onTableDataChange(event: Event, rowIndex: number, cellIndex: number): void {
     const newSlide = { ...this.slide() };
-    if (!newSlide.tableData) return;
+    if (!Array.isArray(newSlide.tableData)) return;
     
     const newTableData = JSON.parse(JSON.stringify(newSlide.tableData));
     const target = event.target as HTMLElement;
@@ -493,7 +654,7 @@ export class SlideComponent {
 
   protected addRow(): void {
     const newSlide = { ...this.slide() };
-    if (!newSlide.tableData || newSlide.tableData.length === 0) return;
+    if (!Array.isArray(newSlide.tableData) || newSlide.tableData.length === 0) return;
     const newTableData = JSON.parse(JSON.stringify(newSlide.tableData));
     const columnCount = newTableData[0].length;
     newTableData.push(Array(columnCount).fill('Data'));
@@ -503,7 +664,7 @@ export class SlideComponent {
 
   protected removeRow(rowIndex: number): void {
     const newSlide = { ...this.slide() };
-    if (!newSlide.tableData || newSlide.tableData.length <= 1) return; // Keep header
+    if (!Array.isArray(newSlide.tableData) || newSlide.tableData.length <= 1) return; // Keep header
     const newTableData = JSON.parse(JSON.stringify(newSlide.tableData));
     if (rowIndex > 0 && rowIndex < newTableData.length) {
       newTableData.splice(rowIndex, 1);
@@ -514,7 +675,7 @@ export class SlideComponent {
 
   protected addColumn(): void {
     const newSlide = { ...this.slide() };
-    if (!newSlide.tableData) return;
+    if (!Array.isArray(newSlide.tableData)) return;
     const newTableData = JSON.parse(JSON.stringify(newSlide.tableData));
     newTableData.forEach((row: string[], index: number) => {
       row.push(index === 0 ? 'Header' : 'Data');
@@ -525,7 +686,7 @@ export class SlideComponent {
 
   protected removeColumn(colIndex: number): void {
     const newSlide = { ...this.slide() };
-    if (!newSlide.tableData || newSlide.tableData[0].length <= 1) return;
+    if (!Array.isArray(newSlide.tableData) || newSlide.tableData.length === 0 || newSlide.tableData[0].length <= 1) return;
     const newTableData = JSON.parse(JSON.stringify(newSlide.tableData));
     newTableData.forEach((row: string[]) => {
       if (colIndex >= 0 && colIndex < row.length) {
@@ -584,5 +745,15 @@ export class SlideComponent {
       newSlide.chartData = newChartData;
       this.slideChange.emit(newSlide);
     }
+  }
+
+  getCyclePosition(index: number, count: number): { x: number, y: number } {
+    const angle = (index / count) * 2 * Math.PI - (Math.PI / 2); // Start from top
+    const radiusX = 30; // % width
+    const radiusY = 30 * (16/9); // Adjust for aspect ratio if needed, or keep simple
+    const x = 50 + radiusX * Math.cos(angle);
+    // Move center Y down to 55 to avoid title overlap, similar to PPTX export
+    const y = 55 + (radiusX * (16/9) * 0.8) * Math.sin(angle); 
+    return { x: x - 9, y: y - 12 }; // Subtract half of item width/height (approx) to center
   }
 }

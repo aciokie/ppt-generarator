@@ -5,7 +5,8 @@
         <div class="absolute inset-0 z-0 h-full w-full bg-gray-900 animate-gradient-bg"></div>
         <div class="w-full max-w-2xl z-10">
           <div class="text-center">
-            <h1 class="text-5xl md:text-6xl font-extrabold bg-gradient-to-r from-purple-400 to-pink-500 text-transparent bg-clip-text">AI Presentation Generator</h1>
+            <h1 class="text-5xl md:text-6xl font-extrabold bg-gradient-to-r from-purple-400 to-pink-500 text-transparent bg-clip-text">Agnes AI</h1>
+            <p class="text-2xl mt-2 font-medium text-gray-300">PowerPoint Presentation Generator</p>
             <p class="mt-4 text-lg text-gray-400">Transform your ideas into stunning presentations in seconds.</p>
           </div>
           
@@ -258,6 +259,11 @@
             </div>
           </div>
         }
+        <div class="text-center mt-8 z-10">
+            <button (click)="openErrorLogModal()" class="text-sm text-gray-500 hover:text-gray-400 hover:underline">
+                View Error Log
+            </button>
+        </div>
       </div>
 
       <!-- AI Choice Modal for Document Upload -->
@@ -376,5 +382,38 @@
         (themeGenerated)="addNewTheme($event)"/>
     }
   }
-  <app-error-toast [message]="geminiService.error()" (closed)="geminiService.error.set(null)"></app-error-toast>
+  <app-error-toast [message]="geminiService.error()" (closed)="geminiService.error.set(null)" (viewLog)="openErrorLogModal()"></app-error-toast>
+
+  <!-- Error Log Modal -->
+  @if (isErrorLogModalOpen()) {
+    <div class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+      <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl h-[70vh] flex flex-col border border-gray-700 animate-pop-in">
+        <div class="p-4 flex justify-between items-center border-b border-gray-700 flex-shrink-0">
+          <h2 class="text-xl font-bold text-white">Application Error Log</h2>
+          <button (click)="isErrorLogModalOpen.set(false)" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+        </div>
+        <div class="p-6 flex-grow overflow-y-auto">
+          @if (errorLogs().length > 0) {
+            <div class="space-y-4">
+              @for(log of errorLogs(); track log.timestamp) {
+                <div class="bg-gray-900/50 p-3 rounded-md border border-gray-700">
+                  <p class="text-sm text-gray-300">{{ log.message }}</p>
+                  <p class="text-xs text-gray-500 mt-2">{{ log.timestamp | date:'medium' }}</p>
+                </div>
+              }
+            </div>
+          } @else {
+            <p class="text-gray-500 text-center mt-8">The error log is empty.</p>
+          }
+        </div>
+        <div class="p-4 border-t border-gray-700 flex-shrink-0 flex justify-end">
+          <button (click)="clearErrorLogs()" 
+                  [disabled]="errorLogs().length === 0"
+                  class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md disabled:bg-gray-500 disabled:cursor-not-allowed">
+            Clear Log
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 </main>
